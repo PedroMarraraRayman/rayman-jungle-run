@@ -1,0 +1,3408 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="icon.ico">
+    <title>Rayman Jungle Run</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #6495ED;
+            background-image: linear-gradient(to bottom, #7EC8E3, #3CB371);
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: white;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+            pointer-events: none;
+            background: rgba(0,0,0,0.2);
+            padding: 10px 15px;
+            border-radius: 8px;
+            backdrop-filter: blur(2px);
+        }
+
+        #lum-hud {
+            position: fixed;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
+            user-select: none;
+            z-index: 5;
+        }
+
+        #lum-hud img {
+            height: 46px;
+            width: auto;
+            opacity: 0.55;
+            filter: drop-shadow(0 1px 3px rgba(0,0,0,0.45));
+        }
+
+        #lum-hud-count {
+            margin-top: -2px;
+            font: bold 20px "Segoe UI", Tahoma, sans-serif;
+            color: #fff;
+            opacity: 0.85;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.85);
+            transition: transform 0.12s ease-out;
+        }
+
+        #lum-hud-count.pop { transform: scale(1.35); }
+
+        h2 { margin: 0 0 5px 0; font-size: 1.2rem; }
+        p { margin: 0; font-size: 0.9rem; opacity: 0.9; }
+
+        #orientation-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #2c3e50;
+            color: white;
+            z-index: 9999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #orientation-overlay h1 { font-size: 2rem; margin-bottom: 10px; }
+        #orientation-overlay p { font-size: 1.1rem; }
+
+        #orientation-overlay .icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            animation: rotatePhone 2s infinite ease-in-out;
+        }
+
+        @keyframes rotatePhone {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(-90deg); }
+            100% { transform: rotate(-90deg); }
+        }
+
+        :root {
+            --btn: clamp(72px, 20vh, 132px);
+            /* A arte do botão de pulo tem mais margem transparente;
+               este fator o deixa do mesmo tamanho visual do ataque. */
+            --jump-scale: 1.22;
+        }
+
+        #touch-controls {
+            position: fixed;
+            left: calc(env(safe-area-inset-left, 0px) + 4vw);
+            right: calc(env(safe-area-inset-right, 0px) + 4vw);
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 6vh);
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .touch-btn {
+            flex: none;
+            pointer-events: auto;
+            width: var(--btn);
+            height: var(--btn);
+            padding: 0;
+            border: 0;
+            background: none;
+            z-index: 10;
+            touch-action: none;
+            cursor: pointer;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.45));
+            transition: transform 0.06s ease-out;
+        }
+
+        .touch-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+            -webkit-user-drag: none;
+        }
+
+        .touch-btn.pressed { transform: scale(0.99); filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)) brightness(0.85); }
+
+        #btn-jump {
+            width: calc(var(--btn) * var(--jump-scale));
+            height: calc(var(--btn) * var(--jump-scale));
+        }
+
+        @media screen and (orientation: portrait) {
+            #orientation-overlay { display: flex; }
+            #gameCanvas, #ui-layer, #touch-controls { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div id="orientation-overlay">
+        <div class="icon">📱</div>
+        <h1>Vire o dispositivo</h1>
+        <p>Este jogo deve ser jogado no modo paisagem (deitado).</p>
+    </div>
+
+    <div id="ui-layer">
+        <h2>Rayman Jungle Run</h2>
+        <p id="ui-status">0%</p>
+    </div>
+
+    <div id="lum-hud">
+        <img id="lum-hud-img" src="Sprites/lum_sprites/lum1.png" alt="Lums" draggable="false">
+        <div id="lum-hud-count">0</div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="touch-controls">
+        <button id="btn-jump" class="touch-btn" type="button" aria-label="Pular">
+            <img src="Sprites/extras/jumpButton.png" alt="Pular" draggable="false">
+        </button>
+
+        <button id="btn-attack" class="touch-btn" type="button" aria-label="Atacar">
+            <img src="Sprites/extras/attackButton.png" alt="Atacar" draggable="false">
+        </button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const statusEl = document.getElementById('ui-status');
+        const lumCountEl = document.getElementById('lum-hud-count');
+        let lastLumCount = -1;
+
+        // Se o lum1 não for .png, tenta .webp.
+        (function () {
+            const im = document.getElementById('lum-hud-img');
+            let triedWebp = false;
+
+            im.addEventListener('error', () => {
+                if (!triedWebp) {
+                    triedWebp = true;
+                    im.src = 'Sprites/lum_sprites/lum1.webp';
+                } else {
+                    im.style.display = 'none';
+                    lumCountEl.textContent = '✨ ' + lumCountEl.textContent;
+                }
+            });
+        })();
+
+        // Imagem de fundo personalizada.
+        // Mantenha o arquivo em Sprites/backgrounds/background1.jpg
+        const backgroundImage = new Image();
+        backgroundImage.src = 'Sprites/backgrounds/background1.jpg';
+
+        // Imagens das novas plataformas.
+        // O carregador tenta extensões e pastas comuns do projeto.
+        function loadImageFromCandidates(image, paths) {
+            let pathIndex = 0;
+
+            image.onerror = () => {
+                pathIndex++;
+
+                if (pathIndex < paths.length) {
+                    image.src = paths[pathIndex];
+                } else {
+                    console.warn(
+                        'Não foi possível carregar a imagem:',
+                        paths[0]
+                    );
+                }
+            };
+
+            image.src = paths[pathIndex];
+        }
+
+        function imagePathCandidates(fileName) {
+            const folders = [
+                'Sprites/floor/',
+                'Sprites/',
+                'Sprites/platforms/',
+                'Sprites/backgrounds/',
+                'artGallery/',
+                ''
+            ];
+
+            const extensions = ['png', 'jpg', 'jpeg', 'webp'];
+
+            return folders.flatMap(folder =>
+                extensions.map(extension =>
+                    folder + fileName + '.' + extension
+                )
+            );
+        }
+
+        const floorMountain1Image = new Image();
+
+        loadImageFromCandidates(
+            floorMountain1Image,
+            imagePathCandidates('floorMountain (1)')
+        );
+
+        const floorMountain2Image = new Image();
+
+        loadImageFromCandidates(
+            floorMountain2Image,
+            imagePathCandidates('floorMountain (2)')
+        );
+
+        // Placa de saída (fim da fase).
+        const exitSignImage = new Image();
+        exitSignImage.src = 'Sprites/extras/exitLevel.png';
+
+        // Vozes do Rayman usadas ocasionalmente ao pular.
+        const raymanJumpVoices = [
+            new Audio('sounds/rayman_sounds/rayYeah1.wav'),
+            new Audio('sounds/rayman_sounds/rayYeah2.wav')
+        ];
+
+        raymanJumpVoices.forEach(sound => {
+            sound.preload = 'auto';
+            sound.volume = 0.78;
+        });
+
+        // Som reproduzido quando o jogador vence.
+        const raymanVictorySound =
+            new Audio('sounds/rayman_sounds/rayVictory.wav');
+        raymanVictorySound.preload = 'auto';
+        raymanVictorySound.volume = 0.95;
+
+        let lastJumpVoiceAt = -Infinity;
+
+        function playRaymanJumpVoice() {
+            const now = performance.now();
+
+            // Evita falas muito próximas umas das outras.
+            if (now - lastJumpVoiceAt < 850) return;
+
+            // Toca em apenas 38% dos pulos para não ficar repetitivo.
+            if (Math.random() > 0.38) return;
+
+            lastJumpVoiceAt = now;
+
+            const original = raymanJumpVoices[
+                Math.floor(Math.random() * raymanJumpVoices.length)
+            ];
+
+            const sound = original.cloneNode();
+            sound.volume = 0.78;
+            sound.play().catch(() => {});
+        }
+
+        function playRaymanVictorySound() {
+            const sound = raymanVictorySound.cloneNode();
+            sound.volume = 0.95;
+            sound.play().catch(() => {});
+        }
+
+        function resizeCanvas() {
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            canvas.width = Math.round(window.innerWidth * dpr);
+            canvas.height = Math.round(window.innerHeight * dpr);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // ------------------------------------------------------------------
+        // Helpers de animação
+        // ------------------------------------------------------------------
+
+        // K = { t, p, w, r, ... } calculado a cada frame:
+        // t = tempo contínuo (idle)
+        // p = fase do ciclo de passos
+        // w = 0..1 (parado -> em movimento)
+        // r = 0..1 (andar -> correr)
+
+        const mix = (a, b, w) => a + (b - a) * w;
+
+        // Trajetória de um pé.
+        function footCycle(ph, r) {
+            const air = Math.max(0, Math.sin(ph));
+
+            return {
+                x: -Math.cos(ph) * mix(50, 90, r),
+                y: -air * mix(38, 66, r),
+                r: -air * mix(0.28, 0.45, r) + Math.cos(ph) * 0.06
+            };
+        }
+
+        // Balanço de uma mão.
+        function handCycle(ph, r) {
+            return {
+                x: -Math.cos(ph) * mix(42, 82, r),
+                y: -Math.sin(ph) * mix(14, 34, r),
+                r: -Math.cos(ph) * mix(0.35, 0.6, r)
+            };
+        }
+
+        // Quique do corpo.
+        const bounce = (p, delay = 0) =>
+            -Math.abs(Math.sin(p - delay));
+
+        // Deslocamento de uma peça quando o tronco se inclina.
+        const lean = (by, L) => ({
+            x: -by * Math.sin(L),
+            y: by * (Math.cos(L) - 1)
+        });
+
+        // Pose da cabeça.
+        function headPose(K) {
+            const l = lean(-170, K.L);
+
+            return {
+                x: mix(
+                    Math.cos(K.t * 1.5) * 2,
+                    K.bx + l.x + Math.cos(K.p) * 3,
+                    K.w
+                ),
+
+                y: mix(
+                    Math.sin(K.t * 2 - 0.2) * 7,
+                    K.drop + l.y + bounce(K.p, 0.5) * K.bAmp,
+                    K.w
+                ),
+
+                r: mix(
+                    0,
+                    K.L * 0.6 + Math.sin(K.p - 0.5) * 0.04,
+                    K.w
+                )
+            };
+        }
+
+        // Peça filha da cabeça.
+        function headChild(K, ox, oy) {
+            const h = headPose(K);
+            const c = Math.cos(h.r);
+            const s = Math.sin(h.r);
+
+            return {
+                x: h.x + (ox * c - oy * s - ox),
+                y: h.y + (ox * s + oy * c - oy),
+                r: h.r
+            };
+        }
+
+        // ------------------------------------------------------------------
+        // Peças do personagem
+        // ------------------------------------------------------------------
+
+        const UPPER = 0.88;
+
+        const raymanParts = [
+            {
+                id: 'back_foot',
+                src: 'Sprites/rayman_sprites/rayman_050.png',
+                color: '#A0522D',
+                w: 80, h: 45, x: -75, y: 170, rot: 0, s: 0.85,
+
+                anim: (K) => {
+                    const f = footCycle(K.p + Math.PI, K.r);
+
+                    return {
+                        x: f.x * K.w,
+                        y: f.y * K.w,
+                        r: f.r * K.w
+                    };
+                }
+            },
+
+            {
+                id: 'right_hand',
+                src: 'Sprites/rayman_sprites/rayman_031.png',
+                color: '#FFFFFF',
+                w: 80, h: 80, x: 95, y: 50, rot: 0.1, s: 0.93,
+                fistSrc: 'Sprites/rayman_sprites/rayman_020.png',
+                fistScale: 1,
+
+                // Soco 1 (mão direita)
+                punchSrc: 'Sprites/rayman_sprites/rayman_046.png',
+                punchScale: 1.25,
+                punchReach: 290,
+                punchFlip: false,
+
+                anim: (K) => {
+                    const h = handCycle(K.p + Math.PI, K.r);
+                    const l = lean(45, K.L);
+
+                    return {
+                        x: mix(
+                            Math.sin(K.t * 1.5) * -3,
+                            h.x + K.bx + l.x,
+                            K.w
+                        ),
+
+                        y: mix(
+                            Math.cos(K.t * 2.2) * 5,
+                            h.y + K.drop + l.y - K.raise +
+                                bounce(K.p) * K.bAmp * 0.8,
+                            K.w
+                        ),
+
+                        r: h.r * K.w
+                    };
+                }
+            },
+
+            {
+                id: 'body',
+                upper: true,
+                src: 'Sprites/rayman_sprites/rayman_016.png',
+                color: '#4B0082',
+                w: 90, h: 100, x: 0, y: 0, rot: 0.05, s: 1,
+
+                anim: (K) => ({
+                    x: mix(0, K.bx, K.w),
+
+                    y: mix(
+                        Math.sin(K.t * 2) * 5,
+                        K.drop + bounce(K.p) * K.bAmp,
+                        K.w
+                    ),
+
+                    r: mix(0, K.L, K.w)
+                })
+            },
+
+            {
+                id: 'hood_back',
+                upper: true,
+                src: 'Sprites/rayman_sprites/rayman_019.png',
+                color: '#8B0000',
+                w: 90, h: 40, x: 8, y: -45, rot: 0.36, s: 1,
+
+                anim: (K) => {
+                    const l = lean(-46, K.L);
+
+                    return {
+                        x: mix(0, K.bx + l.x, K.w),
+
+                        y: mix(
+                            Math.sin(K.t * 2) * 5,
+                            K.drop + l.y + bounce(K.p, 0.25) * K.bAmp,
+                            K.w
+                        ),
+
+                        r: mix(
+                            0,
+                            K.L + Math.sin(K.p - 0.8) *
+                                mix(0.1, 0.18, K.r),
+                            K.w
+                        )
+                    };
+                }
+            },
+
+            {
+                id: 'hood',
+                upper: true,
+                src: 'Sprites/rayman_sprites/rayman_001.png',
+                color: '#B22222',
+                w: 90, h: 40, x: 15, y: -45, rot: 0, s: 1,
+
+                anim: (K) => {
+                    const l = lean(-45, K.L);
+
+                    return {
+                        x: mix(0, K.bx + l.x, K.w),
+
+                        y: mix(
+                            Math.sin(K.t * 2) * 5,
+                            K.drop + l.y + bounce(K.p, 0.25) * K.bAmp,
+                            K.w
+                        ),
+
+                        r: mix(
+                            0,
+                            K.L + Math.sin(K.p - 0.8) *
+                                mix(0.1, 0.18, K.r),
+                            K.w
+                        )
+                    };
+                }
+            },
+
+            {
+                id: 'string_left',
+                upper: true,
+                src: 'Sprites/rayman_sprites/rayman_006.png',
+                color: '#4B0082',
+                w: 8, h: 88, x: 0, y: 12, rot: 0, s: 1,
+                targetH: 87.5,
+
+                anim: (K) => {
+                    const d = 43.75;
+                    const l = lean(-32, K.L);
+
+                    const r =
+                        K.w * (
+                            K.L +
+                            Math.sin(K.p - 1.0) * mix(0.08, 0.2, K.r)
+                        ) +
+                        (1 - K.w) * Math.sin(K.t * 1.7) * 0.03;
+
+                    return {
+                        x: mix(0, K.bx + l.x, K.w) -
+                            d * Math.sin(r),
+
+                        y: mix(
+                            Math.sin(K.t * 2) * 5,
+                            K.drop + l.y + bounce(K.p, 0.25) * K.bAmp,
+                            K.w
+                        ) + d * (Math.cos(r) - 1),
+
+                        r: r
+                    };
+                }
+            },
+
+            {
+                id: 'string_right',
+                upper: true,
+                src: 'Sprites/rayman_sprites/rayman_006.png',
+                color: '#4B0082',
+                w: 8, h: 73, x: 30, y: 4.5, rot: 0, s: 1,
+                targetH: 73,
+
+                anim: (K) => {
+                    const d = 36.5;
+                    const l = lean(-32, K.L);
+
+                    const r =
+                        K.w * (
+                            K.L +
+                            Math.sin(K.p - 1.4) * mix(0.08, 0.2, K.r)
+                        ) +
+                        (1 - K.w) * Math.sin(K.t * 1.7 + 1.2) * 0.03;
+
+                    return {
+                        x: mix(0, K.bx + l.x, K.w) -
+                            d * Math.sin(r),
+
+                        y: mix(
+                            Math.sin(K.t * 2) * 5,
+                            K.drop + l.y + bounce(K.p, 0.25) * K.bAmp,
+                            K.w
+                        ) + d * (Math.cos(r) - 1),
+
+                        r: r
+                    };
+                }
+            },
+
+            {
+                id: 'left_hand',
+                src: 'Sprites/rayman_sprites/rayman_029.png',
+                color: '#E0E0E0',
+                w: 70, h: 90, x: -90, y: 40, rot: -0.1, s: 0.85,
+                fistSrc: 'Sprites/rayman_sprites/rayman_044.png',
+                fistScale: 1,
+
+                // Soco 2 (mão esquerda)
+                punchSrc: 'Sprites/rayman_sprites/rayman_035.png',
+                punchScale: 1.25,
+                punchReach: 475,
+                punchFlip: false,
+
+                anim: (K) => {
+                    const h = handCycle(K.p, K.r);
+                    const l = lean(40, K.L);
+
+                    return {
+                        x: mix(
+                            Math.sin(K.t * 1.2) * 3,
+                            h.x + K.bx + l.x,
+                            K.w
+                        ),
+
+                        y: mix(
+                            Math.cos(K.t * 1.8) * 6,
+                            h.y + K.drop + l.y - K.raise +
+                                bounce(K.p) * K.bAmp * 0.8,
+                            K.w
+                        ),
+
+                        r: h.r * K.w
+                    };
+                }
+            },
+
+            {
+                id: 'hair_back',
+                upper: true,
+                src: 'Sprites/rayman_sprites/rayman_011.png',
+                color: '#8B4513',
+                w: 90, h: 90, x: 4, y: -215, rot: 0, s: 1,
+
+                anim: (K) => {
+                    const c = headChild(K, -40, -55);
+
+                    const lag =
+                        (bounce(K.p, 0.9) - bounce(K.p, 0.5)) *
+                        K.bAmp * 0.4;
+
+                    return {
+                        x: c.x - K.w * mix(0, 2, K.r),
+
+                        y: c.y + K.w * lag +
+                            (1 - K.w) * Math.sin(K.t * 2 - 0.4) * 2.5,
+
+                        r: c.r + K.w * (
+                            -mix(0.03, 0.14, K.r) +
+                            Math.sin(K.p - 1.0) * mix(0.06, 0.09, K.r)
+                        )
+                    };
+                }
+            },
+
+            {
+                id: 'head_base',
+                upper: true,
+                src: 'Sprites/rayman_sprites/rayman_008.png',
+                color: '#FFDEAD',
+                w: 100, h: 60, x: 35, y: -170, rot: 0.1, s: 1,
+
+                anim: (K) => headPose(K)
+            },
+
+            {
+                id: 'eyes',
+                upper: true,
+                src: 'Sprites/rayman_sprites/rayman_004.png',
+                color: '#FFFFFF',
+                w: 60, h: 60, x: 15, y: -189, rot: 0, s: 1,
+
+                blinkSrcs: [
+                    'Sprites/rayman_sprites/rayman_005.png',
+                    'Sprites/rayman_sprites/rayman_012.png',
+                    'Sprites/rayman_sprites/rayman_013.png'
+                ],
+
+                anim: (K) => headChild(K, -20, -15)
+            },
+
+            {
+                id: 'hair',
+                upper: true,
+                src: 'Sprites/rayman_sprites/rayman_003.png',
+                color: '#D2691E',
+                w: 90, h: 90, x: -5, y: -225, rot: 0, s: 1,
+
+                anim: (K) => {
+                    const c = headChild(K, -40, -55);
+
+                    const lag =
+                        (bounce(K.p, 0.9) - bounce(K.p, 0.5)) *
+                        K.bAmp * 0.6;
+
+                    return {
+                        x: c.x - K.w * mix(0, 4, K.r),
+
+                        y: c.y + K.w * lag +
+                            (1 - K.w) * Math.sin(K.t * 2 - 0.6) * 2.5,
+
+                        r: c.r + K.w * (
+                            -mix(0.04, 0.2, K.r) +
+                            Math.sin(K.p - 1.2) * mix(0.08, 0.12, K.r)
+                        )
+                    };
+                }
+            },
+
+            {
+                id: 'front_foot',
+                src: 'Sprites/rayman_sprites/rayman_051.png',
+                color: '#DAA520',
+                w: 85, h: 48, x: 75, y: 170, rot: 0, s: 0.93,
+
+                anim: (K) => {
+                    const f = footCycle(K.p, K.r);
+
+                    return {
+                        x: f.x * K.w,
+                        y: f.y * K.w,
+                        r: f.r * K.w
+                    };
+                }
+            }
+        ];
+
+        raymanParts.forEach(part => {
+            part.img = new Image();
+
+            part.img.onload = () => {
+                part.loaded = true;
+            };
+
+            part.img.onerror = () => {
+                part.error = true;
+                console.warn("Imagem não encontrada: " + part.src);
+            };
+
+            part.img.src = part.src;
+
+            if (part.blinkSrcs) {
+                part.blinkImgs = part.blinkSrcs.map(src => {
+                    const im = new Image();
+
+                    im.onerror = () =>
+                        console.warn("Imagem não encontrada: " + src);
+
+                    im.src = src;
+                    return im;
+                });
+            }
+
+            if (part.fistSrc) {
+                part.fistImg = new Image();
+
+                part.fistImg.onload = () => {
+                    part.fistLoaded = true;
+                };
+
+                part.fistImg.onerror = () =>
+                    console.warn("Punho não encontrado: " + part.fistSrc);
+
+                part.fistImg.src = part.fistSrc;
+            }
+
+            if (part.punchSrc) {
+                part.punchImg = new Image();
+
+                part.punchImg.onload = () => {
+                    part.punchLoaded = true;
+                };
+
+                part.punchImg.onerror = () =>
+                    console.warn("Soco não encontrado: " + part.punchSrc);
+
+                part.punchImg.src = part.punchSrc;
+            }
+        });
+
+        // ==================================================================
+        // SOCOS (botão de ataque)
+        // Soco 1 = mão direita, soco 2 = mão esquerda, alternando sempre.
+        // ==================================================================
+
+        const PUNCH_DUR = 0.62; // duração de cada soco, em segundos
+
+        const punch = {
+            active: false,
+            t: 0,
+            id: null,
+            queued: false,
+            next: 'right_hand'
+        };
+
+        const easeOutCubic = u => 1 - Math.pow(1 - u, 3);
+
+        const easeInOut = u =>
+            u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+
+        const smooth = u => u * u * (3 - 2 * u);
+
+        // Passa um pouco do alvo e volta (usado ao lançar as mãos no pulo).
+        const easeOutBack = u => {
+            const c1 = 1.70158, c3 = c1 + 1;
+            return 1 + c3 * Math.pow(u - 1, 3) + c1 * Math.pow(u - 1, 2);
+        };
+
+        // Estado do soco (u de 0 a 1):
+        // e = extensão do braço (-0.35 = braço recuado, 1 = esticado)
+        // h = curvatura do tronco (-0.25 = inclina p/ trás, 1 = corcunda p/ frente)
+        function punchState(u) {
+            // 1) Preparação: recua o braço e o corpo
+            if (u < 0.30) {
+                const k = easeOutCubic(u / 0.30);
+                return { e: -0.35 * k, h: -0.25 * k };
+            }
+
+            // 2) Disparo rápido: braço lança e o corpo se curva
+            if (u < 0.46) {
+                const k = easeOutCubic((u - 0.30) / 0.16);
+                return {
+                    e: mix(-0.35, 1.06, k),
+                    h: mix(-0.25, 1, k)
+                };
+            }
+
+            // 3) Impacto: segura com um leve tremor
+            if (u < 0.70) {
+                const k = (u - 0.46) / 0.24;
+                return {
+                    e: mix(1.06, 1, easeOutCubic(Math.min(1, k * 2))) -
+                        Math.sin(k * Math.PI * 3) * 0.02 * (1 - k),
+                    h: 1
+                };
+            }
+
+            // 4) Recuperação
+            const k = easeInOut((u - 0.70) / 0.30);
+            return { e: 1 - k, h: 1 - k };
+        }
+
+        function beginPunch() {
+            punch.active = true;
+            punch.t = 0;
+            punch.id = punch.next;
+            punch.next =
+                punch.next === 'right_hand' ? 'left_hand' : 'right_hand';
+        }
+
+        function triggerPunch() {
+            if (!punch.active) {
+                beginPunch();
+            } else {
+                // Guarda o próximo soco para encadear sem travar.
+                punch.queued = true;
+            }
+        }
+
+        function updatePunch(dt) {
+            if (state !== 'play') {
+                punch.active = false;
+                punch.queued = false;
+                return;
+            }
+
+            if (!punch.active) return;
+
+            punch.t += dt;
+
+            // Combo: se tem soco na fila, começa o próximo no fim da recuperação.
+            if (punch.queued && punch.t / PUNCH_DUR >= 0.88) {
+                punch.queued = false;
+                beginPunch();
+                return;
+            }
+
+            if (punch.t >= PUNCH_DUR) {
+                punch.active = false;
+                punch.queued = false;
+            }
+        }
+
+        // Peças do tronco e da cabeça que acompanham o corpo.
+        const PUNCH_BODY_IDS = [
+            'body', 'hood_back', 'hood', 'string_left', 'string_right',
+            'hair_back', 'head_base', 'eyes', 'hair'
+        ];
+
+        const HEAD_IDS = ['hair_back', 'head_base', 'eyes', 'hair'];
+
+        // Altura do quadril (pivô da curvatura do tronco).
+        const HIP_Y = 60;
+
+        function punchPose(part) {
+            if (!punch.active) return null;
+
+            const s = punchState(punch.t / PUNCH_DUR);
+            const e = s.e, h = s.h;
+
+            // Mão que soca: vai longe, sobe até o ombro e cresce no impacto.
+            if (part.id === punch.id) {
+                return {
+                    x: e * (part.punchReach || 100) + h * 44,
+                    y: e * -70 + h * 18,
+                    r: e * 0.12,
+                    sprite: true,
+                    scale: 1 + 0.3 * clamp(e, 0, 1)
+                };
+            }
+
+            // Tronco e cabeça: corcunda pra frente, cabeça afundando.
+            if (PUNCH_BODY_IDS.includes(part.id)) {
+                const H = h * mix(0.42, 0.24, runBlend); // menos curva correndo
+                const l = lean(part.y - HIP_Y, H);
+                let x = l.x + h * 20;
+                let y = l.y + h * 14;
+                let r = H;
+
+                if (HEAD_IDS.includes(part.id)) {
+                    x += h * 14;
+                    y += h * 16;
+                    r += h * 0.12;
+                }
+
+                if (part.id === 'hair' || part.id === 'hair_back') {
+                    x -= h * 6;
+                    r -= h * 0.14;
+                }
+
+                return { x, y, r, sprite: false };
+            }
+
+            // Mão de trás: fica recolhida, como guarda.
+            if (part.id === 'left_hand' || part.id === 'right_hand') {
+                return {
+                    x: -e * 50 + h * 10,
+                    y: -e * 10 + h * 20,
+                    r: -e * 0.2,
+                    sprite: false,
+                    fist: true
+                };
+            }
+
+            // Pés: passo à frente e pé de trás empurrando.
+            if (part.id === 'front_foot') {
+                const f = 1 - 0.6 * runBlend;
+                return { x: h * 38 * f, y: 0, r: -h * 0.08 * f, sprite: false };
+            }
+
+            if (part.id === 'back_foot') {
+                const f = 1 - 0.6 * runBlend;
+                return { x: -h * 38 * f, y: -h * 6 * f, r: h * 0.25 * f, sprite: false };
+            }
+
+            return null;
+        }
+
+        // ==================================================================
+        // JOGO: corrida automática para a direita + pulo
+        // ==================================================================
+
+        const VIEW_H = 450;
+        const CHAR_S = 0.16;
+        const FOOT_BOTTOM = 192;
+        const RUN_SPEED = 205;
+
+        // Rayman corre sozinho em linha reta; o jogador só pula e ataca.
+        // (Troque para true para deixá-lo parado e testar animações.)
+        const FREEZE_MOVEMENT = false;
+        const GRAVITY = 1650;
+        const JUMP_V = 590;
+        const JUMP_CUT = 230;
+        const STEP = 26;
+        const COYOTE = 0.1;
+        const BUFFER = 0.12;
+        const PW = 8;
+        const BODY_H = 56;
+        const PLAYER_X = 0.28;
+
+        const hash = (n) => {
+            const s = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+            return s - Math.floor(s);
+        };
+
+        const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+        // ------------------------------------------------------------------
+        // MAPA
+        // ------------------------------------------------------------------
+
+        const plats = [], spikes = [], lums = [], checkpoints = [];
+        let lx = -600, ly = 270;
+
+        function ground(len, dy = 0) {
+            ly += dy;
+
+            const p = {
+                x: lx,
+                w: len,
+                y: ly,
+                fl: false
+            };
+
+            plats.push(p);
+            lx += len;
+
+            return p;
+        }
+
+        function gap(len) {
+            lx += len;
+        }
+
+        function island(x, y, w) {
+            plats.push({ x, w, y, fl: true });
+        }
+
+        function spike(x, w, y) {
+            spikes.push({ x, w, y });
+        }
+
+        function lumLine(x, y, n, step) {
+            for (let i = 0; i < n; i++) {
+                lums.push({
+                    x: x + i * step,
+                    y,
+                    got: false
+                });
+            }
+        }
+
+        function lumArc(x, y, n, step, h) {
+            for (let i = 0; i < n; i++) {
+                lums.push({
+                    x: x + i * step,
+                    y: y - Math.sin(
+                        n > 1 ? i / (n - 1) * Math.PI : 0
+                    ) * h,
+                    got: false
+                });
+            }
+        }
+
+        function checkpoint(x, y) {
+            checkpoints.push({ x, y, active: false });
+        }
+
+        // A) Corredor inicial
+        ground(1600);
+        lumLine(250, ly - 28, 5, 28);
+        lumArc(560, ly - 24, 7, 26, 55);
+
+        // B) Primeiro buraco + primeiro espinho
+        gap(90);
+
+        {
+            const g = ground(450);
+
+            lumArc(790, ly - 24, 6, 20, 75);
+            spike(g.x + 200, 40, ly);
+            lumArc(g.x + 168, ly - 24, 7, 18, 85);
+        }
+
+        // C) Dois espinhos pequenos, subida leve
+        gap(100);
+
+        {
+            const g = ground(430, -20);
+
+            spike(g.x + 80, 28, ly);
+            spike(g.x + 230, 28, ly);
+
+            lumArc(g.x + 58, ly - 24, 5, 20, 80);
+            lumArc(g.x + 208, ly - 24, 5, 20, 80);
+        }
+
+        // D) Checkpoint
+        gap(110);
+
+        {
+            const g = ground(300);
+
+            checkpoint(g.x + 40, ly);
+            lumLine(g.x + 120, ly - 28, 4, 28);
+        }
+
+        // E) Ilhas flutuantes sobre o abismo
+        {
+            const b = lx;
+
+            island(b + 70, ly - 55, 100);
+            lumLine(b + 90, ly - 55 - 26, 3, 26);
+
+            island(b + 250, ly - 85, 100);
+            lumLine(b + 270, ly - 85 - 26, 3, 26);
+
+            island(b + 430, ly - 55, 100);
+            lumLine(b + 450, ly - 55 - 26, 3, 26);
+
+            gap(640);
+        }
+
+        // F) Espinho comprido
+        {
+            const g = ground(620);
+
+            spike(g.x + 150, 36, ly);
+            lumArc(g.x + 118, ly - 24, 7, 17, 85);
+
+            spike(g.x + 360, 56, ly);
+            lumArc(g.x + 322, ly - 24, 8, 19, 95);
+        }
+
+        // G) Escadaria descendo
+        ground(220, 25);
+        ground(220, 25);
+        ground(320, 25);
+
+        // H) Subindo de volta com espinho
+        gap(100);
+
+        {
+            const g = ground(320, -24);
+
+            spike(g.x + 170, 30, ly);
+            lumArc(g.x + 140, ly - 24, 5, 15, 80);
+        }
+
+        {
+            const g = ground(380, -24);
+
+            checkpoint(g.x + 40, ly);
+            lumLine(g.x + 140, ly - 28, 5, 28);
+        }
+
+        // I) Abismo longo de ilhas
+        {
+            const b = lx;
+            const hs = [-50, -80, -50, -90, -60];
+
+            hs.forEach((h, i) => {
+                island(b + 70 + i * 150, ly + h, 85);
+                lumLine(b + 86 + i * 150, ly + h - 26, 2, 26);
+            });
+
+            gap(70 + 5 * 150 - 20);
+        }
+
+        // J) Reta final com sequência de espinhos
+        {
+            const g = ground(930);
+
+            checkpoint(g.x + 20, ly);
+
+            [160, 350, 540].forEach(o => {
+                spike(g.x + o, 32, ly);
+                lumArc(g.x + o - 30, ly - 24, 7, 16, 85);
+            });
+
+            spike(g.x + 730, 44, ly);
+            lumArc(g.x + 698, ly - 24, 8, 17, 95);
+        }
+
+        // L) Segunda reta: espinhos espaçados
+        gap(100);
+
+        {
+            const g = ground(760);
+
+            checkpoint(g.x + 30, ly);
+            lumLine(g.x + 90, ly - 28, 4, 28);
+
+            [220, 420, 610].forEach((o, i) => {
+                spike(g.x + o, [30, 44, 34][i], ly);
+                lumArc(g.x + o - 30, ly - 24, 6, 16, 80);
+            });
+        }
+
+        // M) Subida em degraus com espinhos
+        gap(100);
+
+        {
+            const a = ground(260, -24);
+
+            spike(a.x + 150, 28, ly);
+            lumArc(a.x + 120, ly - 24, 5, 15, 75);
+
+            const b = ground(260, -24);
+
+            lumLine(b.x + 80, ly - 28, 5, 28);
+
+            const c = ground(300, -24);
+
+            spike(c.x + 140, 30, ly);
+            lumArc(c.x + 108, ly - 24, 5, 15, 80);
+        }
+
+        // N) Descida em degraus
+        {
+            const a = ground(200, 25);
+
+            lumLine(a.x + 60, ly - 28, 4, 28);
+
+            ground(200, 25);
+
+            const c = ground(240, 25);
+
+            checkpoint(c.x + 40, ly);
+        }
+
+        // O) Grande travessia de ilhas (alturas variadas)
+        {
+            const b = lx;
+            const hs = [-45, -75, -95, -70, -45, -80, -55];
+
+            hs.forEach((h, i) => {
+                island(b + 70 + i * 150, ly + h, 85);
+                lumLine(b + 86 + i * 150, ly + h - 26, 2, 26);
+            });
+
+            gap(70 + 7 * 150 - 20);
+        }
+
+        // P) Corredor de espinhos de tamanhos diferentes
+        {
+            const g = ground(1000);
+
+            checkpoint(g.x + 30, ly);
+            lumLine(g.x + 90, ly - 28, 4, 28);
+
+            [200, 380, 560, 740].forEach((o, i) => {
+                spike(g.x + o, [32, 40, 28, 52][i], ly);
+                lumArc(g.x + o - 30, ly - 24, 7, 16, 85);
+            });
+        }
+
+        // K) Última lacuna e chegada
+        gap(105);
+
+        let finish;
+
+        {
+            const g = ground(1500);
+
+            checkpoint(g.x + 40, ly);
+            lumArc(g.x + 140, ly - 24, 9, 22, 90);
+
+            // Chegada no fim do último trecho de chão.
+            finish = {
+                x: g.x + 1250,
+                y: ly
+            };
+        }
+
+        const TOTAL_LUMS = lums.length;
+
+        // Decoração do chão (determinística)
+        const decor = [];
+
+        plats.forEach((pl, pi) => {
+            if (pl.fl) return;
+
+            for (
+                let x = pl.x + 20;
+                x < pl.x + pl.w - 20;
+                x += 46
+            ) {
+                const h = hash(x * 0.37 + pi);
+
+                if (h < 0.5) {
+                    decor.push({
+                        x: x + h * 30,
+                        y: pl.y,
+                        t: h < 0.18 ? 0 : (h < 0.34 ? 1 : 2),
+                        h: hash(x)
+                    });
+                }
+            }
+        });
+
+        // ------------------------------------------------------------------
+        // ESTADO DO JOGO
+        // ------------------------------------------------------------------
+
+        const hud = statusEl;
+
+        let state = 'title';
+
+        let respawn = {
+            x: 0,
+            y: plats[0].y
+        };
+
+        const p = {
+            x: 0,
+            y: plats[0].y,
+            vy: 0,
+            grounded: true,
+            jumping: false
+        };
+
+        let airBlend = 0, coyoteT = 0, jumpBuf = 0, jumpHeld = false;
+        let airT = 0, landSq = 0;
+        let deadT = 0, winT = 0, gotCount = 0, camX = 0, lastHud = '';
+        let walkBlend = 0, runBlend = 0, phase = 0;
+
+        function resetRun() {
+            lums.forEach(l => l.got = false);
+            gotCount = 0;
+
+            checkpoints.forEach(c => c.active = false);
+
+            respawn = {
+                x: 0,
+                y: plats[0].y
+            };
+        }
+
+        function placePlayer() {
+            p.x = respawn.x;
+            p.y = respawn.y;
+            p.vy = 0;
+            p.grounded = true;
+            p.jumping = false;
+
+            coyoteT = 0;
+            jumpBuf = 0;
+            airBlend = 0;
+            airT = 0;
+            landSq = 0;
+
+            walkBlend = Math.max(walkBlend, 0.6);
+            runBlend = Math.max(runBlend, 0.6);
+        }
+
+        function startGame() {
+            resetRun();
+            placePlayer();
+
+            walkBlend = 0;
+            runBlend = 0;
+            state = 'play';
+            jumpBuf = 0;
+        }
+
+        function die(pop) {
+            if (state !== 'play') return;
+
+            state = 'dead';
+            deadT = 0;
+            p.vy = pop || 0;
+            p.grounded = false;
+            jumpBuf = 0;
+        }
+
+        function doRespawn() {
+            placePlayer();
+            state = 'play';
+        }
+
+        // ------------------------------------------------------------------
+        // CONTROLES (mouse/toque e teclado)
+        // ------------------------------------------------------------------
+
+        function pressJump() {
+            if (state === 'title') {
+                startGame();
+                return;
+            }
+
+            if (state === 'win') {
+                if (winT > 0.7) startGame();
+                return;
+            }
+
+            jumpBuf = BUFFER;
+            jumpHeld = true;
+        }
+
+        function releaseJump() {
+            jumpHeld = false;
+        }
+
+        const pointers = new Set();
+
+        canvas.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            pointers.add(e.pointerId);
+            pressJump();
+        });
+
+        const pointerEnd = (e) => {
+            pointers.delete(e.pointerId);
+
+            if (!pointers.size) {
+                releaseJump();
+            }
+        };
+
+        window.addEventListener('pointerup', pointerEnd);
+        window.addEventListener('pointercancel', pointerEnd);
+
+        const JUMP_KEYS = ['Space', 'ArrowUp', 'KeyW', 'Enter'];
+
+        window.addEventListener('keydown', (e) => {
+            if (JUMP_KEYS.includes(e.code)) {
+                e.preventDefault();
+
+                if (!e.repeat) {
+                    pressJump();
+                }
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (JUMP_KEYS.includes(e.code)) {
+                releaseJump();
+            }
+        });
+
+        window.addEventListener('blur', releaseJump);
+
+        // ------------------------------------------------------------------
+        // BOTÕES NA TELA (pulo e ataque) - aparecem no celular e no PC
+        // ------------------------------------------------------------------
+
+        // Ataque: por enquanto só registra o comando; a animação virá depois.
+        function pressAttack() {
+            if (state !== 'play') return;
+            triggerPunch();
+        }
+
+        function bindTouchButton(id, onPress, onRelease) {
+            const btn = document.getElementById(id);
+
+            btn.addEventListener('contextmenu', (e) => e.preventDefault());
+
+            btn.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                btn.classList.add('pressed');
+                if (onRelease) pointers.add(e.pointerId);
+                onPress();
+            });
+
+            const up = () => btn.classList.remove('pressed');
+            btn.addEventListener('pointerup', up);
+            btn.addEventListener('pointerleave', up);
+            btn.addEventListener('pointercancel', up);
+        }
+
+        // O pulo usa o mesmo controle do toque na tela (segurar = pulo mais alto).
+        bindTouchButton('btn-jump', pressJump, true);
+        bindTouchButton('btn-attack', pressAttack, false);
+
+        // Se a imagem de um botão não existir, mostra um ícone no lugar.
+        [['btn-jump', '⤒'], ['btn-attack', '👊']].forEach(([id, icon]) => {
+            const img = document.querySelector('#' + id + ' img');
+            img.addEventListener('error', () => {
+                img.remove();
+                const b = document.getElementById(id);
+                b.textContent = icon;
+                b.style.fontSize = '48px';
+                b.style.color = '#fff';
+            });
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (['KeyX', 'KeyZ', 'KeyJ'].includes(e.code) && !e.repeat) {
+                pressAttack();
+            }
+        });
+
+        // ------------------------------------------------------------------
+        // FÍSICA
+        // ------------------------------------------------------------------
+
+        function stepPhysics(dt) {
+            // Pulo (com buffer e coyote time)
+            if (
+                jumpBuf > 0 &&
+                state === 'play' &&
+                (p.grounded || coyoteT < COYOTE)
+            ) {
+                p.vy = -JUMP_V;
+                p.grounded = false;
+                p.jumping = true;
+                coyoteT = 99;
+                airT = 0;
+                landSq = 0;
+                jumpBuf = 0;
+
+                // Voz aleatória de pulo, com chance e intervalo anti-repetição.
+                playRaymanJumpVoice();
+            }
+
+            // Soltar o botão corta o pulo (pulo variável)
+            if (p.jumping && !jumpHeld && p.vy < -JUMP_CUT) {
+                p.vy = -JUMP_CUT;
+                p.jumping = false;
+            }
+
+            const wasG = p.grounded;
+            const prev = p.y;
+
+            p.vy = Math.min(p.vy + GRAVITY * dt, 1000);
+            p.y += p.vy * dt;
+
+            const impactVy = p.vy;
+            let landed = null;
+
+            if (p.vy >= 0) {
+                for (const pl of plats) {
+                    if (p.x + PW <= pl.x || p.x - PW >= pl.x + pl.w) {
+                        continue;
+                    }
+
+                    let ok = false;
+
+                    if (!pl.fl && wasG) {
+                        ok = Math.abs(pl.y - prev) <= STEP;
+                    } else {
+                        ok = prev <= pl.y + 2 && p.y >= pl.y;
+                    }
+
+                    if (ok && (!landed || pl.y < landed.y)) {
+                        landed = pl;
+                    }
+                }
+            }
+
+            if (landed) {
+                if (!wasG && impactVy > 140) {
+                    landSq = clamp(impactVy / 650, 0.35, 1);
+                }
+
+                p.y = landed.y;
+                p.vy = 0;
+                p.grounded = true;
+                p.jumping = false;
+                coyoteT = 0;
+            } else {
+                p.grounded = false;
+                coyoteT += dt;
+            }
+        }
+
+        function groundBelow(x, y) {
+            let best = null;
+
+            for (const pl of plats) {
+                if (
+                    x + 4 > pl.x &&
+                    x - 4 < pl.x + pl.w &&
+                    pl.y >= y - 3 &&
+                    (!best || pl.y < best.y)
+                ) {
+                    best = pl;
+                }
+            }
+
+            return best;
+        }
+
+        // ------------------------------------------------------------------
+        // Pose de pulo
+        // ------------------------------------------------------------------
+
+        function applyAir(part, a, K) {
+            const A = K.a;
+            const S = K.land || 0;
+
+            if (A < 0.01 && S < 0.01) return a;
+
+            let x = a.x, y = a.y, r = a.r || 0;
+
+            const fu = (K.fall + 1) / 2;      // 0 = subindo, 1 = caindo
+            const upper = PUNCH_BODY_IDS.includes(part.id);
+            const head = HEAD_IDS.includes(part.id);
+
+            // ----- No ar -----
+            if (A >= 0.01) {
+                // mãos: lançadas pra cima com um "estouro" (overshoot)
+                const kh = A * easeOutBack(clamp(K.airT / 0.24, 0, 1));
+                // pés: transição suave
+                const kf = A * smooth(clamp(K.airT / 0.14, 0, 1));
+                const fl = Math.sin(K.t * 20);
+
+                let t = null, k = kf;
+
+                switch (part.id) {
+                    case 'right_hand':
+                        t = {
+                            x: 55 + fu * 30 + fl * 4 * fu,
+                            y: -270 + fu * 75 + fl * 8 * fu,
+                            r: 0.35 + fu * 0.25
+                        };
+                        k = kh;
+                        break;
+
+                    case 'left_hand':
+                        t = {
+                            x: -60 - fu * 30 - fl * 4 * fu,
+                            y: -275 + fu * 75 - fl * 8 * fu,
+                            r: -0.35 - fu * 0.25
+                        };
+                        k = kh;
+                        break;
+
+                    case 'front_foot':
+                        t = {
+                            x: mix(46, 20, fu),
+                            y: mix(-58, -8, fu),
+                            r: mix(-0.5, -0.1, fu)
+                        };
+                        break;
+
+                    case 'back_foot':
+                        t = {
+                            x: mix(-52, -26, fu),
+                            y: mix(-38, -4, fu),
+                            r: mix(0.55, 0.2, fu)
+                        };
+                        break;
+                }
+
+                if (t) {
+                    x = mix(x, t.x, k);
+                    y = mix(y, t.y, k);
+                    r = mix(r, t.r, k);
+                } else if (upper) {
+                    // Peito aberto na subida, inclina pra frente na queda.
+                    const H = A * (-0.05 + fu * 0.16);
+                    const l = lean(part.y, H);
+
+                    x += l.x;
+                    y += l.y - A * (1 - fu) * 6;
+                    r += H;
+
+                    if (head) r += -A * (1 - fu) * 0.1;
+
+                    if (part.id === 'hair' || part.id === 'hair_back') {
+                        y += A * (-K.fall * 14);
+                        r += A * (-0.1 - K.fall * 0.12);
+                    }
+                }
+            }
+
+            // ----- Aterrissagem (amortece) -----
+            if (S >= 0.01) {
+                if (upper) {
+                    y += S * 34;
+                    x += S * 6;
+                    r += S * 0.07;
+
+                    if (head) {
+                        y += S * 14;
+                        r += S * 0.1;
+                    }
+                } else {
+                    switch (part.id) {
+                        case 'right_hand':
+                            x += S * 40; y += S * 60; r += S * 0.3;
+                            break;
+                        case 'left_hand':
+                            x -= S * 40; y += S * 60; r -= S * 0.3;
+                            break;
+                        case 'front_foot':
+                            x += S * 30;
+                            break;
+                        case 'back_foot':
+                            x -= S * 30;
+                            break;
+                    }
+                }
+            }
+
+            return { x, y, r };
+        }
+
+        // ------------------------------------------------------------------
+        // CENÁRIO
+        // ------------------------------------------------------------------
+
+        let zoom = 1, viewW = 800, time = 0;
+
+        function worldTransform(f) {
+            ctx.setTransform(
+                zoom, 0, 0, zoom,
+                -camX * f * zoom,
+                0
+            );
+        }
+
+        function drawLayer(f, tile, drawTile) {
+            const off = camX * f;
+
+            worldTransform(f);
+
+            const first = Math.floor(off / tile) * tile;
+
+            for (let x = first; x < off + viewW + tile; x += tile) {
+                drawTile(x);
+            }
+        }
+
+        const wave = (u, T, ph) =>
+            Math.sin(Math.PI * 2 * u / T + ph);
+
+        function hills(x, T, base, amp, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(x, VIEW_H + 10);
+
+            for (let u = 0; u <= T; u += 20) {
+                ctx.lineTo(
+                    x + u,
+                    base - (
+                        wave(u, T, 0) * amp +
+                        wave(3 * u, T, 1.3) * amp * 0.5 +
+                        wave(5 * u, T, 2.1) * amp * 0.25
+                    )
+                );
+            }
+
+            ctx.lineTo(x + T, VIEW_H + 10);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // FUNDO ESTÁTICO: permanece fixo na tela enquanto o personagem corre.
+        function drawBackground() {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+            const W = canvas.width;
+            const H = canvas.height;
+
+            if (
+                backgroundImage.complete &&
+                backgroundImage.naturalWidth > 0
+            ) {
+                const imgW = backgroundImage.naturalWidth;
+                const imgH = backgroundImage.naturalHeight;
+
+                const scale = Math.max(W / imgW, H / imgH);
+
+                const drawW = imgW * scale;
+                const drawH = imgH * scale;
+
+                const drawX = (W - drawW) / 2;
+                const drawY = (H - drawH) / 2;
+
+                ctx.drawImage(
+                    backgroundImage,
+                    Math.floor(drawX) - 1,
+                    Math.floor(drawY) - 1,
+                    Math.ceil(drawW) + 2,
+                    Math.ceil(drawH) + 2
+                );
+
+                return;
+            }
+
+            // Fundo alternativo enquanto a imagem não carrega.
+            const g = ctx.createLinearGradient(0, 0, 0, H);
+
+            g.addColorStop(0, '#4FB3E8');
+            g.addColorStop(0.55, '#A9E2EE');
+            g.addColorStop(1, '#E6F6D2');
+
+            ctx.fillStyle = g;
+            ctx.fillRect(0, 0, W, H);
+
+            const sg = ctx.createRadialGradient(
+                W * 0.78, H * 0.2, 0,
+                W * 0.78, H * 0.2, H * 0.4
+            );
+
+            sg.addColorStop(0, 'rgba(255,250,200,0.95)');
+            sg.addColorStop(0.25, 'rgba(255,245,170,0.45)');
+            sg.addColorStop(1, 'rgba(255,245,170,0)');
+
+            ctx.fillStyle = sg;
+            ctx.fillRect(0, 0, W, H);
+
+            // Nuvens
+            drawLayer(0.08, 1000, (x) => {
+                ctx.fillStyle = 'rgba(255,255,255,0.8)';
+
+                for (let i = 0; i < 4; i++) {
+                    const cx = x + 80 + i * 250 + hash(i + 7) * 60;
+                    const cy = 50 + hash(i + 3) * 70;
+                    const s = 0.7 + hash(i + 11) * 0.7;
+
+                    ctx.beginPath();
+
+                    ctx.ellipse(
+                        cx, cy,
+                        50 * s, 16 * s,
+                        0, 0, Math.PI * 2
+                    );
+
+                    ctx.ellipse(
+                        cx - 25 * s, cy + 4 * s,
+                        30 * s, 12 * s,
+                        0, 0, Math.PI * 2
+                    );
+
+                    ctx.ellipse(
+                        cx + 28 * s, cy + 5 * s,
+                        32 * s, 12 * s,
+                        0, 0, Math.PI * 2
+                    );
+
+                    ctx.fill();
+                }
+            });
+
+            drawLayer(0.12, 1200, (x) =>
+                hills(x, 1200, 250, 40, '#8CCBB4')
+            );
+
+            drawLayer(0.25, 1000, (x) =>
+                hills(x, 1000, 300, 34, '#58B08A')
+            );
+
+            drawLayer(0.45, 800, (x) =>
+                hills(x, 800, 350, 26, '#3E9C6A')
+            );
+
+            // Árvores da selva
+            drawLayer(0.65, 800, (x) => {
+                for (let i = 0; i < 9; i++) {
+                    const h = hash(
+                        i * 3.3 + Math.floor(x / 800) * 0 + 1
+                    );
+
+                    const tx = x + i * 90 + h * 40;
+                    const th = 150 + hash(i + 20) * 120;
+                    const tw = 9 + hash(i + 40) * 6;
+
+                    ctx.fillStyle = '#4a3322';
+
+                    ctx.fillRect(
+                        tx - tw / 2,
+                        VIEW_H - th,
+                        tw,
+                        th + 20
+                    );
+
+                    const cy = VIEW_H - th;
+
+                    ctx.fillStyle = '#2C8050';
+                    ctx.beginPath();
+                    ctx.ellipse(
+                        tx, cy, 44, 26,
+                        0, 0, Math.PI * 2
+                    );
+                    ctx.fill();
+
+                    ctx.fillStyle = '#35965C';
+                    ctx.beginPath();
+                    ctx.ellipse(
+                        tx - 14, cy - 8,
+                        30, 18,
+                        0, 0, Math.PI * 2
+                    );
+                    ctx.fill();
+
+                    ctx.beginPath();
+                    ctx.ellipse(
+                        tx + 18, cy - 4,
+                        26, 16,
+                        0, 0, Math.PI * 2
+                    );
+                    ctx.fill();
+                }
+            });
+        }
+
+        // ------------------------------------------------------------------
+        // NOVAS PLATAFORMAS
+        // ------------------------------------------------------------------
+
+        // Descobre a área realmente opaca (horizontal) de cada sprite, para
+        // remover as margens transparentes que criavam frestas entre os blocos.
+        const tileTrimCache = new WeakMap();
+
+        function getTileTrim(image) {
+            if (tileTrimCache.has(image)) return tileTrimCache.get(image);
+
+            // Fallback: corta uma pequena sobra nas laterais.
+            let trim = { l: 0.03, r: 0.97 };
+
+            try {
+                const w = image.naturalWidth;
+                const h = image.naturalHeight;
+                const c = document.createElement('canvas');
+                c.width = w;
+                c.height = h;
+
+                const cx = c.getContext('2d', { willReadFrequently: true });
+                cx.drawImage(image, 0, 0);
+
+                const data = cx.getImageData(0, 0, w, h).data;
+                const cols = new Array(w).fill(0);
+
+                for (let y = 0; y < h; y++) {
+                    for (let x = 0; x < w; x++) {
+                        if (data[(y * w + x) * 4 + 3] > 40) cols[x]++;
+                    }
+                }
+
+                const maxC = Math.max(...cols);
+
+                if (maxC > 0) {
+                    let l = 0;
+                    let r = w - 1;
+
+                    while (l < w && cols[l] < maxC * 0.5) l++;
+                    while (r > l && cols[r] < maxC * 0.5) r--;
+
+                    if (r > l) trim = { l: l / w, r: (r + 1) / w };
+                }
+            } catch (e) {
+                // Canvas "contaminado" (abrindo via file://): usa o fallback.
+            }
+
+            tileTrimCache.set(image, trim);
+            return trim;
+        }
+
+        // Desenha um sprite repetido horizontalmente, sem mudar a colisão.
+        // Os blocos se encaixam sem frestas, formando uma faixa contínua.
+        function drawTiledPlatformImage(
+            image,
+            platformX,
+            y,
+            platformW,
+            imageH,
+            x0,
+            x1
+        ) {
+            if (
+                !image.complete ||
+                image.naturalWidth <= 0 ||
+                image.naturalHeight <= 0
+            ) {
+                return false;
+            }
+
+            const trim = getTileTrim(image);
+            const fullW =
+                imageH *
+                (image.naturalWidth / image.naturalHeight);
+
+            // Largura de cada bloco depois de remover as margens vazias.
+            const tileW = fullW * (trim.r - trim.l);
+
+            if (!Number.isFinite(tileW) || tileW <= 0) {
+                return false;
+            }
+
+            const sx = trim.l * image.naturalWidth;
+            const sw = (trim.r - trim.l) * image.naturalWidth;
+
+            const clipX0 = Math.max(platformX, x0);
+            const clipX1 = Math.min(platformX + platformW, x1);
+
+            if (clipX1 <= clipX0) {
+                return true;
+            }
+
+            ctx.save();
+
+            ctx.beginPath();
+            ctx.rect(clipX0, y - 1, clipX1 - clipX0, imageH + 2);
+            ctx.clip();
+
+            // Alinha os blocos ao mundo para não "deslizarem" com a câmera.
+            const firstTileX =
+                Math.floor(platformX / tileW) * tileW;
+
+            for (
+                let tileX = firstTileX;
+                tileX < platformX + platformW;
+                tileX += tileW
+            ) {
+                // +1 de sobreposição para evitar linhas de subpixel.
+                ctx.drawImage(
+                    image,
+                    sx, 0, sw, image.naturalHeight,
+                    tileX, y, tileW + 1, imageH
+                );
+            }
+
+            ctx.restore();
+
+            return true;
+        }
+
+        // Grama original utilizada se floorMountain (1) não carregar.
+        function drawDefaultGrass(pl) {
+            const x = pl.x;
+            const w = pl.w;
+            const y = pl.y;
+
+            if (!pl.fl) {
+                ctx.fillStyle = '#35A04A';
+                ctx.fillRect(x - 2, y, w + 4, 11);
+
+                ctx.fillStyle = '#7BE06A';
+                ctx.fillRect(x - 2, y, w + 4, 4);
+
+                ctx.fillStyle = '#35A04A';
+
+                for (let u = x; u < x + w; u += 14) {
+                    ctx.beginPath();
+                    ctx.arc(u + 4, y + 10, 5.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            } else {
+                ctx.fillStyle = '#35A04A';
+                ctx.fillRect(x - 2, y, w + 4, 8);
+
+                ctx.fillStyle = '#7BE06A';
+                ctx.fillRect(x - 2, y, w + 4, 3);
+            }
+        }
+
+        function drawPlatform(pl, x0, x1) {
+            if (pl.x > x1 || pl.x + pl.w < x0) {
+                return;
+            }
+
+            const x = pl.x;
+            const w = pl.w;
+            const y = pl.y;
+
+            if (!pl.fl) {
+                // Sem base de terra: o terreno é só a faixa de grama/pedra.
+            } else {
+                // Base original das ilhas flutuantes.
+                ctx.fillStyle = '#6b4226';
+
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + w, y);
+                ctx.lineTo(x + w - 8, y + 14);
+
+                ctx.quadraticCurveTo(
+                    x + w / 2,
+                    y + 40,
+                    x + 8,
+                    y + 14
+                );
+
+                ctx.closePath();
+                ctx.fill();
+
+                // Cipós originais.
+                ctx.strokeStyle = '#2f8a4a';
+                ctx.lineWidth = 2;
+
+                for (let i = 1; i < 4; i++) {
+                    const vx = x + (w / 4) * i;
+                    const vl = 14 + hash(vx) * 22;
+
+                    ctx.beginPath();
+
+                    ctx.moveTo(vx, y + 10);
+
+                    ctx.lineTo(
+                        vx + Math.sin(time * 2 + vx) * 2,
+                        y + 10 + vl
+                    );
+
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#3fb25a';
+                    ctx.beginPath();
+
+                    ctx.arc(
+                        vx + Math.sin(time * 2 + vx) * 2,
+                        y + 10 + vl,
+                        3,
+                        0, Math.PI * 2
+                    );
+
+                    ctx.fill();
+                }
+            }
+
+            // FLOOR MOUNTAIN (1)
+            // A imagem é colocada na superfície da plataforma, alinhada
+            // à altura original de colisão usada pelo Rayman.
+            const surfaceReady = drawTiledPlatformImage(
+                floorMountain1Image,
+                pl.x,
+                pl.y - 1,
+                pl.w,
+                30,
+                x0,
+                x1
+            );
+
+            // Caso a imagem ainda não carregue, mantém a grama original.
+            if (!surfaceReady) {
+                drawDefaultGrass(pl);
+            }
+        }
+
+        // FLOOR MOUNTAIN (2)
+        // Camada de primeiro plano desenhada depois do personagem.
+        // Fica abaixo da superfície para criar profundidade visual.
+        function drawForegroundPlatforms(x0, x1) {
+            if (
+                !floorMountain2Image.complete ||
+                floorMountain2Image.naturalWidth <= 0
+            ) {
+                return;
+            }
+
+            worldTransform(1);
+
+            for (const pl of plats) {
+                // A camada frontal acompanha apenas o terreno principal.
+                if (pl.fl) continue;
+
+                if (pl.x > x1 || pl.x + pl.w < x0) {
+                    continue;
+                }
+
+                drawTiledPlatformImage(
+                    floorMountain2Image,
+                    pl.x,
+                    pl.y + 9,
+                    pl.w,
+                    38,
+                    x0,
+                    x1
+                );
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // DECORAÇÃO
+        // ------------------------------------------------------------------
+
+        function drawDecor(d) {
+            if (d.t === 0) {
+                // Flor
+                ctx.strokeStyle = '#2a8a3e';
+                ctx.lineWidth = 1.5;
+
+                ctx.beginPath();
+                ctx.moveTo(d.x, d.y);
+                ctx.lineTo(d.x, d.y - 10 - d.h * 4);
+                ctx.stroke();
+
+                ctx.fillStyle =
+                    d.h > 0.5 ? '#ff6f91' : '#ffd23f';
+
+                ctx.beginPath();
+
+                ctx.arc(
+                    d.x,
+                    d.y - 11 - d.h * 4,
+                    3.2,
+                    0,
+                    Math.PI * 2
+                );
+
+                ctx.fill();
+            } else if (d.t === 1) {
+                // Arbusto
+                ctx.fillStyle = '#2d9150';
+
+                ctx.beginPath();
+
+                ctx.arc(
+                    d.x, d.y - 6,
+                    9, Math.PI, 0
+                );
+
+                ctx.arc(
+                    d.x + 11, d.y - 4,
+                    7, Math.PI, 0
+                );
+
+                ctx.arc(
+                    d.x - 10, d.y - 3,
+                    6, Math.PI, 0
+                );
+
+                ctx.fill();
+            } else {
+                // Tufo de grama
+                ctx.strokeStyle = '#2a8a3e';
+                ctx.lineWidth = 1.5;
+
+                ctx.beginPath();
+
+                ctx.moveTo(d.x - 4, d.y);
+                ctx.lineTo(d.x - 6, d.y - 8);
+
+                ctx.moveTo(d.x, d.y);
+                ctx.lineTo(d.x, d.y - 11);
+
+                ctx.moveTo(d.x + 4, d.y);
+                ctx.lineTo(d.x + 6, d.y - 8);
+
+                ctx.stroke();
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // PSYCHLOPS (substitui os espinhos)
+        //   Psychlops1 = corpo, Psychlops2 = boca, Psychlops3 = pupila,
+        //   Psychlops4 = globo ocular. Os espinhos ao redor são desenhados
+        //   por código. Arquivos em Sprites/enemies/
+        // ------------------------------------------------------------------
+
+        const PSY_R0 = 32;     // raio base do Psychlops (px do mundo)
+        const PSY_RK = 0.12;   // quanto o raio cresce com a largura do "espinho"
+        const PSY_HIT = 0.68;  // raio da colisão (fração do raio): menor que o
+                               // desenho para ainda dar pra pular por cima
+        const PSY_SPIKES = false; // true = volta os espinhos ao redor
+        const PSY_SQUASH = 0.88;  // achatamento vertical (1 = redondo perfeito)
+
+        const psyArt = {};
+
+        function loadPsy(key, name) {
+            const o = {
+                img: new Image(),
+                ok: false,
+                bx: 0, by: 0, bw: 1, bh: 1
+            };
+
+            o.img.onload = () => {
+                const im = o.img;
+
+                o.bw = im.width;
+                o.bh = im.height;
+
+                // Recorta as margens transparentes (se o navegador deixar).
+                try {
+                    const c = document.createElement('canvas');
+                    c.width = im.width;
+                    c.height = im.height;
+
+                    const cx = c.getContext('2d');
+                    cx.drawImage(im, 0, 0);
+
+                    const d = cx.getImageData(0, 0, c.width, c.height).data;
+
+                    let x0 = c.width, y0 = c.height, x1 = -1, y1 = -1;
+
+                    for (let y = 0; y < c.height; y++) {
+                        for (let x = 0; x < c.width; x++) {
+                            if (d[(y * c.width + x) * 4 + 3] > 30) {
+                                if (x < x0) x0 = x;
+                                if (x > x1) x1 = x;
+                                if (y < y0) y0 = y;
+                                if (y > y1) y1 = y;
+                            }
+                        }
+                    }
+
+                    if (x1 >= x0 && y1 >= y0) {
+                        o.bx = x0;
+                        o.by = y0;
+                        o.bw = x1 - x0 + 1;
+                        o.bh = y1 - y0 + 1;
+                    }
+                } catch (err) {
+                    console.warn('Psychlops: sem recorte automático para ' + name);
+                }
+
+                o.ok = true;
+            };
+
+            o.img.onerror = () =>
+                console.warn('Imagem não encontrada: Sprites/enemies/' + name + '.png');
+
+            o.img.src = 'Sprites/enemies/' + name + '.png';
+            psyArt[key] = o;
+        }
+
+        loadPsy('body', 'Psychlops1');
+        loadPsy('mouth', 'Psychlops2');
+        loadPsy('pupil', 'Psychlops3');
+        loadPsy('eye', 'Psychlops4');
+
+        // Desenha uma peça centralizada em (cx, cy) com a largura w.
+        function psyPart(o, cx, cy, w, hMul) {
+            if (!o || !o.ok) return false;
+
+            const h = w * (o.bh / o.bw) * (hMul || 1);
+
+            ctx.drawImage(
+                o.img,
+                o.bx, o.by, o.bw, o.bh,
+                cx - w / 2, cy - h / 2, w, h
+            );
+
+            return true;
+        }
+
+        // Posição/tamanho do Psychlops que fica no lugar de cada "espinho".
+        function psyGeom(s) {
+            const R = PSY_R0 + s.w * PSY_RK;
+
+            return {
+                R,
+                cx: s.x + s.w / 2,
+                cy: s.y - R * PSY_SQUASH - 3 +
+                    Math.sin(time * 2.2 + s.x * 0.1) * 2.5
+            };
+        }
+
+        // Colisão: círculo do Psychlops contra o retângulo do Rayman.
+        function psyHits(s) {
+            const g = psyGeom(s);
+
+            const left = p.x - 5, right = p.x + 5;
+            const top = p.y - BODY_H + 6, bottom = p.y - 1;
+
+            const qx = clamp(g.cx, left, right);
+            const qy = clamp(g.cy, top, bottom);
+
+            const dx = g.cx - qx, dy = g.cy - qy;
+            const r = g.R * PSY_HIT;
+
+            return dx * dx + dy * dy < r * r;
+        }
+
+        function drawSpike(s) {
+            const g = psyGeom(s);
+            const R = g.R;
+            const ph = time * 2.4 + s.x * 0.07;
+
+            // Sombra no chão (some um pouco quando ele sobe)
+            ctx.fillStyle = 'rgba(0,0,0,0.25)';
+            ctx.beginPath();
+            ctx.ellipse(g.cx, s.y + 1, R * 0.8, 4, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.save();
+            ctx.translate(g.cx, g.cy);
+            ctx.scale(1, PSY_SQUASH); // achatado na vertical
+
+            // Espinhos girando ao redor do corpo
+            const N = PSY_SPIKES ? 14 : 0;
+            const rot = time * 0.5 + s.x;
+
+            for (let i = 0; i < N; i++) {
+                const a = rot + i * Math.PI * 2 / N;
+                const len =
+                    R * (i % 2 ? 1.2 : 1.45) +
+                    Math.sin(ph * 1.5 + i) * R * 0.08;
+                const bw = R * 0.2;
+
+                ctx.save();
+                ctx.rotate(a);
+
+                ctx.fillStyle = '#17214a';
+                ctx.beginPath();
+                ctx.moveTo(R * 0.7, -bw);
+                ctx.lineTo(len, 0);
+                ctx.lineTo(R * 0.7, bw);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = '#2b3d80';
+                ctx.beginPath();
+                ctx.moveTo(R * 0.7, -bw);
+                ctx.lineTo(len, 0);
+                ctx.lineTo(R * 0.7, 0);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            const B = psyArt.body, M = psyArt.mouth;
+            const E = psyArt.eye, P = psyArt.pupil;
+
+            // Corpo (respira)
+            const sq = Math.sin(ph * 1.7) * 0.04;
+
+            ctx.save();
+            ctx.scale(1 + sq, 1 - sq);
+
+            // Corpo redondo: largura = altura = diâmetro.
+            const bMul = (B && B.ok) ? B.bw / B.bh : 1;
+
+            if (!psyPart(B, 0, 0, R * 2, bMul)) {
+                ctx.fillStyle = '#16204a';
+                ctx.beginPath();
+                ctx.arc(0, 0, R, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+
+            // Boca (mastiga de leve)
+            const chomp = Math.max(0, Math.sin(ph * 2.2));
+
+            ctx.save();
+            ctx.translate(0, R * 0.48);
+            ctx.scale(1, 1 + chomp * 0.12);
+            psyPart(M, 0, 0, R * 1.35);
+            ctx.restore();
+
+            // Globo ocular
+            const eyeW = R * 1.2;
+            const eyeCy = -R * 0.2;
+
+            let eyeH = eyeW;
+
+            if (E && E.ok) {
+                // redondo (o achatamento geral já é aplicado em tudo)
+                psyPart(E, 0, eyeCy, eyeW, eyeW / (eyeW * E.bh / E.bw));
+            } else {
+                ctx.fillStyle = '#f2ecc8';
+                ctx.beginPath();
+                ctx.ellipse(0, eyeCy, eyeW / 2, eyeH / 2, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Pupila: acompanha o Rayman
+            const tx = clamp((p.x - g.cx) / 90, -1, 1);
+            const ty = clamp(((p.y - 28) - g.cy) / 70, -1, 1);
+
+            const px = tx * eyeW * 0.2;
+            const py = eyeCy + ty * eyeH * 0.18;
+            const pSize = eyeW * 0.36;
+
+            // A pupila (Psychlops3) é bem achatada: estica na vertical
+            // para ficar mais redonda.
+            const pw = pSize * 0.9;
+            const pMul = (P && P.ok) ? pSize / (pw * P.bh / P.bw) : 1;
+
+            if (!psyPart(P, px, py, pw, pMul)) {
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(px, py, pSize / 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        // ------------------------------------------------------------------
+        // LUM (corpo + 2 braços)
+        //   lum2 = corpo, lum4 = braço esquerdo (visto na tela),
+        //   lum3 = braço direito (espelhado)
+        // Arquivos em Sprites/lum_sprites/
+        // ------------------------------------------------------------------
+
+        const LUM_W = 17;          // largura do corpo do Lum no mundo (px)
+        const LUM_SHOULDER_X = 0.30; // posição do ombro (fração da largura do corpo)
+        const LUM_SHOULDER_Y = 0.18; // posição do ombro (fração da altura do corpo)
+        const LUM_SWING = 0.5;       // balanço dos braços (radianos)
+
+        const lumArt = {};
+
+        // Carrega o sprite, tenta .png e depois .webp, e descobre a área
+        // visível (recorta as margens transparentes automaticamente).
+        function loadLumPart(key, name, alphaMin, pivotX, pivotY) {
+            const o = {
+                img: new Image(),
+                ok: false,
+                bx: 0, by: 0, bw: 1, bh: 1,
+                pivotX, pivotY
+            };
+
+            const exts = ['.png', '.webp'];
+            let tryIdx = 0;
+
+            o.img.onload = () => {
+                const im = o.img;
+
+                o.bw = im.width;
+                o.bh = im.height;
+
+                try {
+                    const c = document.createElement('canvas');
+                    c.width = im.width;
+                    c.height = im.height;
+
+                    const cx = c.getContext('2d');
+                    cx.drawImage(im, 0, 0);
+
+                    const d = cx.getImageData(0, 0, c.width, c.height).data;
+
+                    let x0 = c.width, y0 = c.height, x1 = -1, y1 = -1;
+
+                    for (let y = 0; y < c.height; y++) {
+                        for (let x = 0; x < c.width; x++) {
+                            if (d[(y * c.width + x) * 4 + 3] > alphaMin) {
+                                if (x < x0) x0 = x;
+                                if (x > x1) x1 = x;
+                                if (y < y0) y0 = y;
+                                if (y > y1) y1 = y;
+                            }
+                        }
+                    }
+
+                    if (x1 >= x0 && y1 >= y0) {
+                        o.bx = x0;
+                        o.by = y0;
+                        o.bw = x1 - x0 + 1;
+                        o.bh = y1 - y0 + 1;
+                    }
+                } catch (err) {
+                    // Abrindo direto do disco (file://) o navegador pode
+                    // bloquear a leitura dos pixels: usa a imagem inteira.
+                    console.warn('Lum: sem recorte automático para ' + name);
+                }
+
+                o.ok = true;
+            };
+
+            o.img.onerror = () => {
+                tryIdx++;
+
+                if (tryIdx < exts.length) {
+                    o.img.src = 'Sprites/lum_sprites/' + name + exts[tryIdx];
+                } else {
+                    console.warn('Imagem não encontrada: Sprites/lum_sprites/' + name);
+                }
+            };
+
+            o.img.src = 'Sprites/lum_sprites/' + name + exts[0];
+            lumArt[key] = o;
+        }
+
+        // pivô = onde o braço "prende" no corpo (fração do recorte do sprite)
+        loadLumPart('body', 'lum2', 120, 0.5, 0.5);
+        loadLumPart('armL', 'lum4', 20, 0.76, 0.04);
+        loadLumPart('armR', 'lum3', 20, 0.90, 0.02);
+
+        function drawLum(l) {
+            const B = lumArt.body, AL = lumArt.armL, AR = lumArt.armR;
+
+            if (!B || !B.ok) {
+                drawLumFallback(l);
+                return;
+            }
+
+            const s = LUM_W / B.bw;
+            const ph = time * 6 + l.x * 0.37;
+
+            const bob = Math.sin(time * 4 + l.x * 0.05) * 2.5;
+            const cx = l.x;
+            const cy = l.y + bob;
+
+            const bodyW = B.bw * s;
+            const bodyH = B.bh * s;
+
+            // Braços (atrás do corpo)
+            const shX = bodyW * LUM_SHOULDER_X;
+            const shY = bodyH * LUM_SHOULDER_Y;
+
+            const swing = Math.sin(ph) * LUM_SWING;
+
+            function arm(A, sx, sy, rot, flip) {
+                if (!A || !A.ok) return;
+
+                const w = A.bw * s;
+                const h = A.bh * s;
+
+                ctx.save();
+                ctx.translate(sx, sy);
+                ctx.rotate(rot);
+                if (flip) ctx.scale(-1, 1);
+
+                ctx.drawImage(
+                    A.img,
+                    A.bx, A.by, A.bw, A.bh,
+                    -A.pivotX * w, -A.pivotY * h, w, h
+                );
+
+                ctx.restore();
+            }
+
+            arm(AL, cx - shX, cy + shY, -swing, false);
+            arm(AR, cx + shX, cy + shY, swing, true);
+
+            // Corpo (com um leve "respirar" e a luz do sprite)
+            const sq = Math.sin(ph * 1.3) * 0.04;
+
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.scale(1 + sq, 1 - sq);
+
+            ctx.drawImage(
+                B.img,
+                (-(B.bx + B.bw / 2)) * s,
+                (-(B.by + B.bh / 2)) * s,
+                B.img.width * s,
+                B.img.height * s
+            );
+
+            ctx.restore();
+        }
+
+        // Alternativa caso o sprite do corpo não carregue.
+        function drawLumFallback(l) {
+            const bob =
+                Math.sin(time * 4 + l.x * 0.05) * 2.5;
+
+            const r =
+                6 + Math.sin(time * 6 + l.x) * 0.6;
+
+            const gl = ctx.createRadialGradient(
+                l.x, l.y + bob, 0,
+                l.x, l.y + bob, 15
+            );
+
+            gl.addColorStop(0, 'rgba(255,240,120,0.75)');
+            gl.addColorStop(1, 'rgba(255,240,120,0)');
+
+            ctx.fillStyle = gl;
+            ctx.beginPath();
+            ctx.arc(l.x, l.y + bob, 15, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#FFD92E';
+            ctx.beginPath();
+            ctx.arc(l.x, l.y + bob, r, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#FFF6B0';
+            ctx.beginPath();
+            ctx.arc(
+                l.x - 2,
+                l.y + bob - 2,
+                r * 0.4,
+                0, Math.PI * 2
+            );
+            ctx.fill();
+        }
+
+        function drawFlag(x, y, h, color, big) {
+            ctx.fillStyle = '#5b4636';
+            ctx.fillRect(x - 2, y - h, 4, h);
+
+            ctx.fillStyle = '#d9d9d9';
+            ctx.beginPath();
+            ctx.arc(x, y - h, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            const w = big ? 46 : 28;
+            const fh = big ? 28 : 18;
+            const sw = Math.sin(time * 5) * 2.5;
+
+            ctx.fillStyle = color;
+            ctx.beginPath();
+
+            ctx.moveTo(x + 2, y - h + 4);
+
+            ctx.quadraticCurveTo(
+                x + w / 2,
+                y - h + 4 + sw,
+                x + w,
+                y - h + fh / 2 + sw
+            );
+
+            ctx.quadraticCurveTo(
+                x + w / 2,
+                y - h + fh - sw,
+                x + 2,
+                y - h + fh
+            );
+
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // ------------------------------------------------------------------
+        // DESENHO DO MUNDO
+        // ------------------------------------------------------------------
+
+        function drawWorld(x0, x1) {
+            worldTransform(1);
+
+            plats.forEach(pl => drawPlatform(pl, x0, x1));
+
+            decor.forEach(d => {
+                if (d.x > x0 - 20 && d.x < x1 + 20) {
+                    drawDecor(d);
+                }
+            });
+
+            spikes.forEach(s => {
+                if (s.x - 80 < x1 && s.x + s.w + 80 > x0) {
+                    drawSpike(s);
+                }
+            });
+
+            checkpoints.forEach(c => {
+                if (c.x > x0 - 40 && c.x < x1) {
+                    drawFlag(
+                        c.x,
+                        c.y,
+                        46,
+                        c.active ? '#ffd23f' : '#cfd8dc',
+                        false
+                    );
+                }
+            });
+
+            if (finish.x > x0 - 100 && finish.x < x1 + 60) {
+                if (
+                    exitSignImage.complete &&
+                    exitSignImage.naturalWidth > 0
+                ) {
+                    // A imagem aponta para a esquerda: espelha para a direita.
+                    const signH = 52;
+                    const signW =
+                        signH *
+                        (exitSignImage.naturalWidth /
+                            exitSignImage.naturalHeight);
+
+                    ctx.save();
+                    ctx.translate(finish.x, finish.y);
+                    ctx.scale(-1, 1);
+
+                    ctx.drawImage(
+                        exitSignImage,
+                        -signW / 2,
+                        -signH + 4,
+                        signW,
+                        signH
+                    );
+
+                    ctx.restore();
+                } else {
+                    // Fallback caso a placa não carregue.
+                    drawFlag(finish.x, finish.y, 90, '#e53935', true);
+                    drawFlag(finish.x + 40, finish.y, 60, '#43a047', false);
+                }
+            }
+
+            lums.forEach(l => {
+                if (!l.got && l.x > x0 - 20 && l.x < x1 + 20) {
+                    drawLum(l);
+                }
+            });
+        }
+
+        // ------------------------------------------------------------------
+        // PERSONAGEM
+        // ------------------------------------------------------------------
+
+        // Rastro do soco + onda de impacto.
+        function drawPunchFx(K, cx, cy) {
+            if (!punch.active) return;
+
+            const u = punch.t / PUNCH_DUR;
+
+            let ta = 0;
+            if (u >= 0.28 && u < 0.46) ta = (u - 0.28) / 0.18;
+            else if (u >= 0.46 && u < 0.68) ta = 1 - (u - 0.46) / 0.22;
+
+            if (ta <= 0) return;
+
+            const fp = raymanParts.find(q => q.id === punch.id);
+            let a = applyAir(fp, fp.anim(K), K);
+            const pp = punchPose(fp);
+
+            if (pp) {
+                a = { x: a.x + pp.x, y: a.y + pp.y, r: (a.r || 0) + pp.r };
+            }
+
+            const ex = cx + (fp.x + a.x) * CHAR_S;
+            const ey = cy + (fp.y + a.y) * CHAR_S;
+
+            // Origem do rastro: atrás e abaixo do corpo (arco largo).
+            const sx = cx - 120 * CHAR_S;
+            const sy = cy + 75 * CHAR_S;
+
+            const dx = ex - sx, dy = ey - sy;
+            const len = Math.hypot(dx, dy) || 1;
+            const nx = -dy / len, ny = dx / len;
+
+            const w = 15;
+            const mx = (sx + ex) / 2 + nx * len * 0.12;
+            const my = (sy + ey) / 2 + ny * len * 0.12;
+
+            ctx.save();
+
+            const g = ctx.createLinearGradient(sx, sy, ex, ey);
+            g.addColorStop(0, 'rgba(235,238,242,0)');
+            g.addColorStop(0.55, 'rgba(235,238,242,' + (0.35 * ta) + ')');
+            g.addColorStop(1, 'rgba(245,247,250,' + (0.75 * ta) + ')');
+
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.quadraticCurveTo(
+                mx - nx * w * 0.35, my - ny * w * 0.35,
+                ex - nx * w / 2, ey - ny * w / 2
+            );
+            ctx.lineTo(ex + nx * w / 2, ey + ny * w / 2);
+            ctx.quadraticCurveTo(
+                mx + nx * w * 0.35, my + ny * w * 0.35,
+                sx, sy
+            );
+            ctx.closePath();
+            ctx.fill();
+
+            // Riscos de velocidade
+            ctx.strokeStyle = 'rgba(255,255,255,' + (0.55 * ta) + ')';
+            ctx.lineWidth = 1.2;
+            ctx.lineCap = 'round';
+
+            [-1, 1].forEach(sgn => {
+                const off = sgn * (w * 0.9);
+                ctx.beginPath();
+                ctx.moveTo(sx + dx * 0.45 + nx * off, sy + dy * 0.45 + ny * off);
+                ctx.lineTo(sx + dx * 0.85 + nx * off, sy + dy * 0.85 + ny * off);
+                ctx.stroke();
+            });
+
+            // Onda de impacto no fim do soco
+            if (u > 0.40 && u < 0.64) {
+                const rk = clamp((u - 0.40) / 0.24, 0, 1);
+                const rad = 5 + 20 * easeOutCubic(rk);
+                const al = 0.85 * (1 - rk);
+
+                ctx.strokeStyle = 'rgba(255,255,255,' + al + ')';
+                ctx.lineWidth = 2.2 * (1 - rk) + 0.4;
+                ctx.beginPath();
+                ctx.arc(ex + 9, ey, rad, 0, Math.PI * 2);
+                ctx.stroke();
+
+                for (let i = 0; i < 5; i++) {
+                    const ang = -0.9 + i * 0.45;
+                    const r0 = rad * 0.7, r1 = rad * 1.35;
+
+                    ctx.beginPath();
+                    ctx.moveTo(ex + 9 + Math.cos(ang) * r0, ey + Math.sin(ang) * r0);
+                    ctx.lineTo(ex + 9 + Math.cos(ang) * r1, ey + Math.sin(ang) * r1);
+                    ctx.stroke();
+                }
+            }
+
+            ctx.restore();
+        }
+
+        function drawPlayer(K) {
+            worldTransform(1);
+
+            // Sombra
+            const gb = groundBelow(p.x, p.y);
+
+            if (gb && state !== 'dead') {
+                const d = clamp((gb.y - p.y) / 120, 0, 1);
+
+                ctx.fillStyle =
+                    'rgba(0,0,0,' + (0.28 * (1 - d * 0.7)) + ')';
+
+                ctx.beginPath();
+
+                ctx.ellipse(
+                    p.x,
+                    gb.y + 1,
+                    15 * (1 - d * 0.4),
+                    3.2 * (1 - d * 0.4),
+                    0, 0, Math.PI * 2
+                );
+
+                ctx.fill();
+            }
+
+            const centerX = p.x;
+            const centerY = p.y - FOOT_BOTTOM * CHAR_S;
+
+            drawPunchFx(K, centerX, centerY);
+
+            raymanParts.forEach(part => {
+                let a = applyAir(part, part.anim(K), K);
+
+                const pp = punchPose(part);
+
+                if (pp) {
+                    a = {
+                        x: a.x + pp.x,
+                        y: a.y + pp.y,
+                        r: (a.r || 0) + pp.r
+                    };
+                }
+
+                const sc =
+                    CHAR_S * (part.upper ? UPPER : 1);
+
+                const drawX =
+                    centerX + (part.x + a.x) * sc;
+
+                const drawY =
+                    centerY + (part.y + a.y) * sc;
+
+                ctx.save();
+                ctx.translate(drawX, drawY);
+
+                const rotation =
+                    (part.rot || 0) + (a.r || 0);
+
+                if (rotation) {
+                    ctx.rotate(rotation);
+                }
+
+                const punching = !!(
+                    pp && pp.sprite && part.punchLoaded
+                );
+
+                const useFist =
+                    punching ||
+                    ((walkBlend > 0.5 || K.a > 0.3 || K.land > 0.05 ||
+                      (pp && pp.fist)) && part.fistLoaded);
+
+                const fistNow =
+                    punching ? part.punchImg : part.fistImg;
+
+                if (useFist) {
+                    const boxW = part.loaded
+                        ? part.img.width * sc * part.s * 0.9
+                        : part.w * sc * part.s;
+
+                    const boxH = part.loaded
+                        ? part.img.height * sc * part.s * 0.9
+                        : part.h * sc * part.s;
+
+                    const fit = Math.min(
+                        boxW / fistNow.width,
+                        boxH / fistNow.height
+                    ) * (punching ? (part.punchScale || 1) * (pp.scale || 1) : (part.fistScale || 1));
+
+                    const fW = fistNow.width * fit;
+                    const fH = fistNow.height * fit;
+
+                    if (punching && part.punchFlip) ctx.scale(-1, 1);
+
+                    ctx.drawImage(
+                        fistNow,
+                        -fW / 2,
+                        -fH / 2,
+                        fW,
+                        fH
+                    );
+                } else if (part.loaded && !part.error) {
+                    let imgW =
+                        part.img.width * sc * part.s * 0.9;
+
+                    let imgH =
+                        part.img.height * sc * part.s * 0.9;
+
+                    if (part.targetH) {
+                        imgH = part.targetH * sc * part.s;
+                        imgW =
+                            part.img.width * (imgH / part.img.height);
+                    }
+
+                    let drawImg = part.img;
+
+                    if (part.blinkImgs && blinkT >= 0) {
+                        const bi = part.blinkImgs[
+                            BLINK_SEQ[
+                                Math.min(
+                                    BLINK_SEQ.length - 1,
+                                    Math.floor(blinkT / BLINK_FRAME_DUR)
+                                )
+                            ]
+                        ];
+
+                        if (
+                            bi &&
+                            bi.complete &&
+                            bi.naturalWidth > 0
+                        ) {
+                            drawImg = bi;
+                        }
+                    }
+
+                    ctx.drawImage(
+                        drawImg,
+                        -imgW / 2,
+                        -imgH / 2,
+                        imgW,
+                        imgH
+                    );
+                } else {
+                    // Alternativa quando um sprite do personagem não carrega.
+                    ctx.fillStyle = part.color;
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 1;
+
+                    ctx.beginPath();
+
+                    ctx.ellipse(
+                        0,
+                        0,
+                        part.w * sc * part.s / 2,
+                        part.h * sc * part.s / 2,
+                        0, 0, Math.PI * 2
+                    );
+
+                    ctx.fill();
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            });
+        }
+
+        function drawText(txt, x, y, size, color) {
+            ctx.font =
+                'bold ' + size + 'px "Segoe UI", Tahoma, sans-serif';
+
+            ctx.textAlign = 'center';
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = size * 0.16;
+            ctx.strokeStyle = 'rgba(20,50,30,0.85)';
+
+            ctx.strokeText(txt, x, y);
+
+            ctx.fillStyle = color || '#fff';
+            ctx.fillText(txt, x, y);
+        }
+
+        function drawOverlay() {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+            const W = canvas.width;
+            const H = canvas.height;
+
+            if (state === 'title') {
+                ctx.fillStyle = 'rgba(0,0,0,0.18)';
+                ctx.fillRect(0, 0, W, H);
+
+                drawText(
+                    'RAYMAN JUNGLE RUN',
+                    W / 2,
+                    H * 0.24,
+                    H * 0.09,
+                    '#FFE94D'
+                );
+
+                const pulse =
+                    0.75 + Math.sin(time * 4) * 0.25;
+
+                ctx.globalAlpha = pulse;
+
+                drawText(
+                    'Toque na tela ou aperte ESPAÇO para começar',
+                    W / 2,
+                    H * 0.34,
+                    H * 0.04
+                );
+
+                ctx.globalAlpha = 1;
+
+                drawText(
+                    'Segure para pular mais alto',
+                    W / 2,
+                    H * 0.40,
+                    H * 0.03,
+                    '#d8f5e0'
+                );
+            } else if (state === 'win') {
+                ctx.fillStyle = 'rgba(0,0,0,0.25)';
+                ctx.fillRect(0, 0, W, H);
+
+                drawText(
+                    'FASE COMPLETA!',
+                    W / 2,
+                    H * 0.3,
+                    H * 0.1,
+                    '#FFE94D'
+                );
+
+                drawText(
+                    'Lums: ' + gotCount + ' / ' + TOTAL_LUMS,
+                    W / 2,
+                    H * 0.4,
+                    H * 0.05
+                );
+
+                if (winT > 0.7) {
+                    ctx.globalAlpha =
+                        0.75 + Math.sin(time * 4) * 0.25;
+
+                    drawText(
+                        'Toque para jogar de novo',
+                        W / 2,
+                        H * 0.48,
+                        H * 0.04
+                    );
+
+                    ctx.globalAlpha = 1;
+                }
+            } else if (state === 'dead') {
+                drawText(
+                    'Ops!',
+                    W / 2,
+                    H * 0.3,
+                    H * 0.08,
+                    '#ffb3a7'
+                );
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // LOOP
+        // ------------------------------------------------------------------
+
+        function gameLoop(now) {
+            const dt = Math.min(
+                (now - lastTime) / 1000,
+                0.05
+            );
+
+            lastTime = now;
+            time = (now - startTime) / 1000;
+
+            // Atualização do jogo
+            updatePunch(dt);
+
+            const running =
+                !FREEZE_MOVEMENT &&
+                (state === 'play' || state === 'dead');
+
+            const k = Math.min(1, dt * 6);
+
+            walkBlend +=
+                ((running ? 1 : 0) - walkBlend) * k;
+
+            runBlend +=
+                ((running ? 1 : 0) - runBlend) * k;
+
+            if (
+                Math.abs((running ? 1 : 0) - walkBlend) < 0.001
+            ) {
+                walkBlend = running ? 1 : 0;
+            }
+
+            if (
+                Math.abs((running ? 1 : 0) - runBlend) < 0.001
+            ) {
+                runBlend = running ? 1 : 0;
+            }
+
+            if (jumpBuf > 0) {
+                jumpBuf -= dt;
+            }
+
+            if (state === 'play' || state === 'win') {
+                const speed =
+                    mix(110, RUN_SPEED, runBlend) * walkBlend;
+
+                p.x += speed * dt;
+
+                stepPhysics(dt);
+
+                if (state === 'play') {
+                    // Lums
+                    for (const l of lums) {
+                        if (
+                            !l.got &&
+                            Math.abs(l.x - p.x) < 16 &&
+                            Math.abs(
+                                l.y - (p.y - BODY_H / 2)
+                            ) < 30
+                        ) {
+                            l.got = true;
+                            gotCount++;
+                        }
+                    }
+
+                    // Psychlops
+                    for (const s of spikes) {
+                        if (psyHits(s)) {
+                            die(-380);
+                            break;
+                        }
+                    }
+
+                    // Checkpoints / chegada
+                    for (const c of checkpoints) {
+                        if (!c.active && p.x >= c.x) {
+                            c.active = true;
+
+                            respawn = {
+                                x: c.x,
+                                y: c.y
+                            };
+                        }
+                    }
+
+                    if (p.x >= finish.x) {
+                        state = 'win';
+                        winT = 0;
+                        jumpHeld = false;
+
+                        // Toca a comemoração somente ao entrar no estado de vitória.
+                        playRaymanVictorySound();
+                    }
+
+                    if (p.y > VIEW_H + 60) {
+                        die(0);
+                    }
+                }
+            } else if (state === 'dead') {
+                p.vy += GRAVITY * dt;
+                p.y += p.vy * dt;
+                deadT += dt;
+
+                if (deadT > 1.0) {
+                    doRespawn();
+                }
+            }
+
+            if (state === 'win') {
+                winT += dt;
+            }
+
+            // Passos e animação
+            phase +=
+                dt * mix(9, 14.5, runBlend) * walkBlend;
+
+            airBlend +=
+                ((p.grounded ? 0 : 1) - airBlend) *
+                Math.min(1, dt * 16);
+
+            if (p.grounded && airBlend < 0.01) {
+                airBlend = 0;
+            }
+
+            const K = {
+                t: time,
+                p: phase,
+                w: walkBlend,
+                r: runBlend
+            };
+
+            K.L =
+                mix(0.10, 0.34, K.r) +
+                Math.sin(phase) * 0.04;
+
+            K.bx = mix(8, 28, K.r);
+            K.bAmp = mix(14, 20, K.r);
+            K.drop = mix(0, 20, K.r);
+            K.raise = mix(0, 22, K.r);
+
+            K.a = airBlend;
+            K.fall = clamp(p.vy / 600, -1, 1);
+
+            if (p.grounded) airT = 0; else airT += dt;
+            landSq = Math.max(0, landSq - dt * 4.2);
+            K.airT = airT;
+            K.land = landSq;
+
+            K.L = mix(
+                K.L,
+                0.08 + K.fall * 0.12,
+                K.a
+            );
+
+            K.bAmp *= (1 - K.a);
+            K.drop = mix(K.drop, 2, K.a);
+            K.bx = mix(K.bx, 6, K.a);
+            K.raise = mix(K.raise, 0, K.a);
+
+            // Piscar: só parado
+            if (runBlend > 0.3) {
+                blinkT = -1;
+                nextBlink = time + 1.5 + Math.random() * 2;
+            } else if (blinkT >= 0) {
+                blinkT += dt;
+
+                if (
+                    blinkT >=
+                    BLINK_SEQ.length * BLINK_FRAME_DUR
+                ) {
+                    blinkT = -1;
+                    nextBlink =
+                        time + 2 + Math.random() * 3.5;
+                }
+            } else if (time >= nextBlink) {
+                blinkT = 0;
+            }
+
+            // Câmera
+            zoom = canvas.height / VIEW_H;
+            viewW = canvas.width / zoom;
+
+            if (state !== 'dead') {
+                camX = p.x - viewW * PLAYER_X;
+            }
+
+            // Desenho
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+            ctx.clearRect(
+                0, 0,
+                canvas.width,
+                canvas.height
+            );
+
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+
+            drawBackground();
+
+            drawWorld(
+                camX - 60,
+                camX + viewW + 60
+            );
+
+            drawPlayer(K);
+
+            // FLOOR MOUNTAIN (2):
+            // desenhado depois do Rayman, como camada frontal.
+            drawForegroundPlatforms(
+                camX - 60,
+                camX + viewW + 60
+            );
+
+            drawOverlay();
+
+            // HUD
+            const prog = clamp(
+                Math.round(p.x / finish.x * 100),
+                0,
+                100
+            );
+
+            const txt = prog + '%';
+
+            if (gotCount !== lastLumCount) {
+                lumCountEl.textContent = gotCount;
+
+                if (lastLumCount >= 0 && gotCount > lastLumCount) {
+                    lumCountEl.classList.add('pop');
+                    setTimeout(() => lumCountEl.classList.remove('pop'), 120);
+                }
+
+                lastLumCount = gotCount;
+            }
+
+            if (txt !== lastHud) {
+                hud.textContent = txt;
+                lastHud = txt;
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Piscar
+        const BLINK_SEQ = [0, 1, 2, 1, 0];
+        const BLINK_FRAME_DUR = 0.045;
+
+        let blinkT = -1;
+        let nextBlink = 2;
+
+        let startTime = performance.now();
+        let lastTime = startTime;
+
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>
