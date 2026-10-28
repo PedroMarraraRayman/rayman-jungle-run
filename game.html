@@ -69,6 +69,31 @@
 
         #lum-hud-count.pop { transform: scale(1.35); }
 
+        #guide-hud {
+            position: fixed;
+            top: 67px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(76vw, 760px);
+            box-sizing: border-box;
+            padding: 9px 16px;
+            border: 1px solid rgba(255,255,255,0.28);
+            border-radius: 12px;
+            background: rgba(12, 35, 30, 0.72);
+            color: #fff;
+            text-align: center;
+            font-size: clamp(12px, 1.7vw, 17px);
+            font-weight: 700;
+            line-height: 1.3;
+            text-shadow: 0 2px 3px rgba(0,0,0,0.8);
+            box-shadow: 0 5px 18px rgba(0,0,0,0.18);
+            backdrop-filter: blur(5px);
+            pointer-events: none;
+            user-select: none;
+            z-index: 6;
+            display: none;
+        }
+
         h2 { margin: 0 0 5px 0; font-size: 1.2rem; }
         p { margin: 0; font-size: 0.9rem; opacity: 0.9; }
 
@@ -157,9 +182,288 @@
             height: calc(var(--btn) * var(--jump-scale));
         }
 
+        /* -------------------------------------------------------------
+           MENU INICIAL — apresentação do jogo antes da partida
+           ------------------------------------------------------------- */
+        #main-menu {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: grid;
+            place-items: center;
+            overflow: hidden;
+            padding: clamp(16px, 3vh, 32px) 22px;
+            box-sizing: border-box;
+            color: #fff;
+            background:
+                radial-gradient(ellipse at 50% 18%, rgba(82, 210, 112, .28), transparent 42%),
+                linear-gradient(115deg, rgba(4, 24, 30, .94), rgba(8, 60, 45, .82) 52%, rgba(6, 31, 31, .95)),
+                url('Sprites/backgrounds/background1.jpg') center / cover no-repeat,
+                #092d2b;
+            opacity: 1;
+            transform: scale(1);
+            transition: opacity .24s ease, transform .24s ease;
+            isolation: isolate;
+        }
+
+        #main-menu::before,
+        #main-menu::after {
+            content: "";
+            position: absolute;
+            z-index: -1;
+            pointer-events: none;
+            border-radius: 50%;
+        }
+
+        #main-menu::before {
+            width: min(62vw, 760px);
+            aspect-ratio: 1;
+            right: -18vw;
+            top: -34vw;
+            border: 1px solid rgba(190, 255, 156, .18);
+            box-shadow: 0 0 0 32px rgba(190,255,156,.025), 0 0 0 76px rgba(190,255,156,.025), 0 0 100px rgba(73,220,130,.12);
+        }
+
+        #main-menu::after {
+            width: min(55vw, 650px);
+            aspect-ratio: 1;
+            left: -20vw;
+            bottom: -38vw;
+            border: 1px solid rgba(255, 226, 105, .13);
+            box-shadow: 0 0 0 34px rgba(255,226,105,.025), 0 0 0 78px rgba(255,226,105,.02);
+        }
+
+        #main-menu[hidden] { display: none !important; }
+        #main-menu.menu-leaving { opacity: 0; transform: scale(1.025); pointer-events: none; }
+
+        .menu-shell {
+            width: min(920px, 100%);
+            max-height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: clamp(9px, 1.7vh, 18px);
+            animation: menuEnter .7s cubic-bezier(.2,.75,.25,1) both;
+        }
+
+        .menu-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            color: #c9f8d0;
+            font-size: clamp(10px, 1.3vh, 13px);
+            font-weight: 900;
+            letter-spacing: .25em;
+            text-transform: uppercase;
+            text-shadow: 0 2px 10px rgba(0,0,0,.5);
+        }
+
+        .menu-eyebrow::before,
+        .menu-eyebrow::after {
+            content: "";
+            width: clamp(20px, 4vw, 52px);
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #a5eeb2);
+        }
+        .menu-eyebrow::after { transform: scaleX(-1); }
+
+        .menu-logo-wrap {
+            width: min(66vw, 560px);
+            height: clamp(92px, 24vh, 205px);
+            display: grid;
+            place-items: center;
+            margin: -2px 0;
+        }
+
+        #menu-logo {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 10px 12px rgba(0,0,0,.42));
+            animation: logoFloat 4.8s ease-in-out infinite;
+        }
+
+        #menu-wordmark {
+            margin: 0;
+            color: #ffe55e;
+            font-size: clamp(34px, 7.5vh, 70px);
+            line-height: .86;
+            letter-spacing: -.055em;
+            font-weight: 1000;
+            font-style: italic;
+            text-shadow: 0 4px 0 #9a4a19, 0 7px 0 #622d20, 0 11px 24px rgba(0,0,0,.5);
+            transform: rotate(-2deg);
+        }
+        #menu-wordmark span {
+            display: block;
+            margin-top: 12px;
+            color: #fff;
+            font-size: .43em;
+            letter-spacing: .19em;
+            text-shadow: 0 3px 0 #17583c, 0 5px 12px rgba(0,0,0,.55);
+        }
+
+        .menu-tagline {
+            margin: 0;
+            color: rgba(246,255,246,.92);
+            font-size: clamp(13px, 2.1vh, 19px);
+            letter-spacing: .04em;
+            font-weight: 600;
+            text-shadow: 0 2px 8px #001b18;
+        }
+
+        .menu-levels {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin: 2px 0;
+        }
+
+        .menu-level-chip {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 8px 14px;
+            border: 1px solid rgba(224,255,222,.19);
+            border-radius: 999px;
+            background: rgba(0,22,20,.28);
+            color: #effff0;
+            font-size: clamp(10px, 1.45vh, 13px);
+            font-weight: 800;
+            letter-spacing: .11em;
+            box-shadow: inset 0 1px rgba(255,255,255,.06);
+        }
+
+        .menu-level-chip b {
+            display: grid;
+            place-items: center;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #ffec75, #ffad35);
+            color: #3c411d;
+            font-size: 12px;
+            box-shadow: 0 2px 7px rgba(0,0,0,.22);
+        }
+
+        .menu-level-divider {
+            width: clamp(18px, 3vw, 38px);
+            height: 1px;
+            background: linear-gradient(90deg, rgba(255,224,98,.15), rgba(255,224,98,.8), rgba(255,224,98,.15));
+        }
+
+        #start-game-btn {
+            position: relative;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 13px;
+            min-width: clamp(220px, 28vw, 310px);
+            min-height: clamp(48px, 8vh, 66px);
+            margin-top: 2px;
+            padding: 0 32px;
+            border: 2px solid rgba(255,255,255,.72);
+            border-radius: 16px;
+            color: #183b25;
+            background: linear-gradient(180deg, #fff078, #ffc83b 72%, #f5a929);
+            box-shadow: 0 5px 0 #b76c24, 0 12px 28px rgba(0,0,0,.28), inset 0 2px 0 rgba(255,255,255,.75);
+            font: 1000 clamp(15px, 2.2vh, 20px)/1 'Segoe UI', Tahoma, sans-serif;
+            letter-spacing: .13em;
+            cursor: pointer;
+            transition: transform .13s ease, filter .13s ease, box-shadow .13s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #start-game-btn .play-icon {
+            display: grid;
+            place-items: center;
+            width: 27px;
+            height: 27px;
+            border-radius: 50%;
+            background: rgba(35,78,36,.13);
+            font-size: 14px;
+            padding-left: 2px;
+            box-sizing: border-box;
+        }
+
+        #start-game-btn:hover { transform: translateY(-3px); filter: brightness(1.06); box-shadow: 0 8px 0 #b76c24, 0 16px 30px rgba(0,0,0,.3), inset 0 2px 0 rgba(255,255,255,.8); }
+        #start-game-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #b76c24, 0 6px 14px rgba(0,0,0,.25); }
+        #start-game-btn:focus-visible { outline: 3px solid #fff; outline-offset: 5px; }
+
+        .menu-press-hint {
+            margin: 0;
+            color: rgba(236,255,240,.72);
+            font-size: clamp(10px, 1.4vh, 12px);
+            letter-spacing: .07em;
+        }
+
+        .menu-controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 8px 18px;
+            margin-top: 3px;
+            color: rgba(239,255,242,.84);
+            font-size: clamp(10px, 1.45vh, 13px);
+            font-weight: 700;
+        }
+
+        .menu-control-item { display: inline-flex; align-items: center; gap: 7px; }
+        .menu-key {
+            display: inline-block;
+            padding: 5px 8px;
+            border: 1px solid rgba(255,255,255,.28);
+            border-bottom-width: 3px;
+            border-radius: 6px;
+            color: #fff4a5;
+            background: rgba(0,0,0,.25);
+            font-weight: 900;
+            letter-spacing: .04em;
+            white-space: nowrap;
+        }
+
+        .menu-footer {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: max(12px, env(safe-area-inset-bottom));
+            color: rgba(230,255,235,.48);
+            text-align: center;
+            font-size: 10px;
+            letter-spacing: .2em;
+            font-weight: 800;
+        }
+
+        @keyframes menuEnter {
+            from { opacity: 0; transform: translateY(14px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        @media (max-height: 560px) and (orientation: landscape) {
+            #main-menu { padding-top: 8px; padding-bottom: 20px; }
+            .menu-shell { gap: 6px; }
+            .menu-logo-wrap { height: 22vh; min-height: 64px; }
+            .menu-tagline { font-size: 12px; }
+            .menu-level-chip { padding: 5px 10px; }
+            .menu-level-chip b { width: 21px; height: 21px; }
+            #start-game-btn { min-height: 42px; min-width: 200px; }
+            .menu-controls { margin-top: 0; }
+        }
+
         @media screen and (orientation: portrait) {
             #orientation-overlay { display: flex; }
-            #gameCanvas, #ui-layer, #touch-controls { display: none; }
+            #main-menu, #gameCanvas, #ui-layer, #touch-controls { display: none; }
         }
     </style>
 </head>
@@ -170,10 +474,38 @@
         <p>Este jogo deve ser jogado no modo paisagem (deitado).</p>
     </div>
 
+    <main id="main-menu" role="dialog" aria-label="Menu principal do Rayman Jungle Run">
+        <div class="menu-shell">
+            <div class="menu-eyebrow">A aventura começa aqui</div>
+            <div class="menu-logo-wrap">
+                <img id="menu-logo" alt="Rayman Jungle Run" draggable="false">
+                <h1 id="menu-wordmark" hidden>RAYMAN<span>JUNGLE RUN</span></h1>
+            </div>
+            <p class="menu-tagline">Corra pela floresta. Salte no desconhecido. Colete os Lums!</p>
+            <div class="menu-levels" aria-label="Duas fases">
+                <div class="menu-level-chip"><b>01</b> TUTORIAL</div>
+                <span class="menu-level-divider" aria-hidden="true"></span>
+                <div class="menu-level-chip"><b>02</b> PARKOUR</div>
+            </div>
+            <button id="start-game-btn" type="button">
+                <span class="play-icon" aria-hidden="true">▶</span>
+                <span>JOGAR AGORA</span>
+            </button>
+            <p class="menu-press-hint">ou pressione ENTER / ESPAÇO</p>
+            <div class="menu-controls" aria-label="Controles">
+                <span class="menu-control-item"><span class="menu-key">ESPAÇO / ↑</span> PULAR</span>
+                <span class="menu-control-item"><span class="menu-key">X / Z / J</span> ATACAR</span>
+            </div>
+        </div>
+        <div class="menu-footer">RAYMAN JUNGLE RUN&nbsp; • &nbsp;DUAS FASES, UMA AVENTURA</div>
+    </main>
+
     <div id="ui-layer">
         <h2>Rayman Jungle Run</h2>
         <p id="ui-status">0%</p>
     </div>
+
+    <div id="guide-hud" aria-live="polite"></div>
 
     <div id="lum-hud">
         <img id="lum-hud-img" src="Sprites/lum_sprites/lum1.png" alt="Lums" draggable="false">
@@ -197,6 +529,7 @@
         const ctx = canvas.getContext('2d');
         const statusEl = document.getElementById('ui-status');
         const lumCountEl = document.getElementById('lum-hud-count');
+        const guideHud = document.getElementById('guide-hud');
         let lastLumCount = -1;
 
         // Se o lum1 não for .png, tenta .webp.
@@ -994,7 +1327,7 @@
         const VIEW_H = 450;
         const CHAR_S = 0.16;
         const FOOT_BOTTOM = 192;
-        const RUN_SPEED = 205;
+        const RUN_SPEED = 230; // aumento moderado de ~12%, sem tirar o controle do parkour
 
         // Rayman corre sozinho em linha reta; o jogador só pula e ataca.
         // (Troque para true para deixá-lo parado e testar animações.)
@@ -1048,7 +1381,7 @@
         }
 
         function spike(x, w, y) {
-            spikes.push({ x, w, y });
+            spikes.push({ x, w, y, dead: false });
         }
 
         function lumLine(x, y, n, step) {
@@ -1077,238 +1410,218 @@
             checkpoints.push({ x, y, active: false });
         }
 
-        // A) Corredor inicial
-        ground(1600);
-        lumLine(250, ly - 28, 5, 28);
-        lumArc(560, ly - 24, 7, 26, 55);
+        // ------------------------------------------------------------------
+        // FASES: tutorial curto + parkour com plataformas elevadas
+        // Os mesmos sprites de Psychlops e Lums são reaproveitados.
+        // ------------------------------------------------------------------
 
-        // B) Primeiro buraco + primeiro espinho
-        gap(90);
-
-        {
-            const g = ground(450);
-
-            lumArc(790, ly - 24, 6, 20, 75);
-            spike(g.x + 200, 40, ly);
-            lumArc(g.x + 168, ly - 24, 7, 18, 85);
-        }
-
-        // C) Dois espinhos pequenos, subida leve
-        gap(100);
-
-        {
-            const g = ground(430, -20);
-
-            spike(g.x + 80, 28, ly);
-            spike(g.x + 230, 28, ly);
-
-            lumArc(g.x + 58, ly - 24, 5, 20, 80);
-            lumArc(g.x + 208, ly - 24, 5, 20, 80);
-        }
-
-        // D) Checkpoint
-        gap(110);
-
-        {
-            const g = ground(300);
-
-            checkpoint(g.x + 40, ly);
-            lumLine(g.x + 120, ly - 28, 4, 28);
-        }
-
-        // E) Ilhas flutuantes sobre o abismo
-        {
-            const b = lx;
-
-            island(b + 70, ly - 55, 100);
-            lumLine(b + 90, ly - 55 - 26, 3, 26);
-
-            island(b + 250, ly - 85, 100);
-            lumLine(b + 270, ly - 85 - 26, 3, 26);
-
-            island(b + 430, ly - 55, 100);
-            lumLine(b + 450, ly - 55 - 26, 3, 26);
-
-            gap(640);
-        }
-
-        // F) Espinho comprido
-        {
-            const g = ground(620);
-
-            spike(g.x + 150, 36, ly);
-            lumArc(g.x + 118, ly - 24, 7, 17, 85);
-
-            spike(g.x + 360, 56, ly);
-            lumArc(g.x + 322, ly - 24, 8, 19, 95);
-        }
-
-        // G) Escadaria descendo
-        ground(220, 25);
-        ground(220, 25);
-        ground(320, 25);
-
-        // H) Subindo de volta com espinho
-        gap(100);
-
-        {
-            const g = ground(320, -24);
-
-            spike(g.x + 170, 30, ly);
-            lumArc(g.x + 140, ly - 24, 5, 15, 80);
-        }
-
-        {
-            const g = ground(380, -24);
-
-            checkpoint(g.x + 40, ly);
-            lumLine(g.x + 140, ly - 28, 5, 28);
-        }
-
-        // I) Abismo longo de ilhas
-        {
-            const b = lx;
-            const hs = [-50, -80, -50, -90, -60];
-
-            hs.forEach((h, i) => {
-                island(b + 70 + i * 150, ly + h, 85);
-                lumLine(b + 86 + i * 150, ly + h - 26, 2, 26);
-            });
-
-            gap(70 + 5 * 150 - 20);
-        }
-
-        // J) Reta final com sequência de espinhos
-        {
-            const g = ground(930);
-
-            checkpoint(g.x + 20, ly);
-
-            [160, 350, 540].forEach(o => {
-                spike(g.x + o, 32, ly);
-                lumArc(g.x + o - 30, ly - 24, 7, 16, 85);
-            });
-
-            spike(g.x + 730, 44, ly);
-            lumArc(g.x + 698, ly - 24, 8, 17, 95);
-        }
-
-        // L) Segunda reta: espinhos espaçados
-        gap(100);
-
-        {
-            const g = ground(760);
-
-            checkpoint(g.x + 30, ly);
-            lumLine(g.x + 90, ly - 28, 4, 28);
-
-            [220, 420, 610].forEach((o, i) => {
-                spike(g.x + o, [30, 44, 34][i], ly);
-                lumArc(g.x + o - 30, ly - 24, 6, 16, 80);
-            });
-        }
-
-        // M) Subida em degraus com espinhos
-        gap(100);
-
-        {
-            const a = ground(260, -24);
-
-            spike(a.x + 150, 28, ly);
-            lumArc(a.x + 120, ly - 24, 5, 15, 75);
-
-            const b = ground(260, -24);
-
-            lumLine(b.x + 80, ly - 28, 5, 28);
-
-            const c = ground(300, -24);
-
-            spike(c.x + 140, 30, ly);
-            lumArc(c.x + 108, ly - 24, 5, 15, 80);
-        }
-
-        // N) Descida em degraus
-        {
-            const a = ground(200, 25);
-
-            lumLine(a.x + 60, ly - 28, 4, 28);
-
-            ground(200, 25);
-
-            const c = ground(240, 25);
-
-            checkpoint(c.x + 40, ly);
-        }
-
-        // O) Grande travessia de ilhas (alturas variadas)
-        {
-            const b = lx;
-            const hs = [-45, -75, -95, -70, -45, -80, -55];
-
-            hs.forEach((h, i) => {
-                island(b + 70 + i * 150, ly + h, 85);
-                lumLine(b + 86 + i * 150, ly + h - 26, 2, 26);
-            });
-
-            gap(70 + 7 * 150 - 20);
-        }
-
-        // P) Corredor de espinhos de tamanhos diferentes
-        {
-            const g = ground(1000);
-
-            checkpoint(g.x + 30, ly);
-            lumLine(g.x + 90, ly - 28, 4, 28);
-
-            [200, 380, 560, 740].forEach((o, i) => {
-                spike(g.x + o, [32, 40, 28, 52][i], ly);
-                lumArc(g.x + o - 30, ly - 24, 7, 16, 85);
-            });
-        }
-
-        // K) Última lacuna e chegada
-        gap(105);
-
-        let finish;
-
-        {
-            const g = ground(1500);
-
-            checkpoint(g.x + 40, ly);
-            lumArc(g.x + 140, ly - 24, 9, 22, 90);
-
-            // Chegada no fim do último trecho de chão.
-            finish = {
-                x: g.x + 1250,
-                y: ly
-            };
-        }
-
-        const TOTAL_LUMS = lums.length;
-
-        // Decoração do chão (determinística)
+        let finish = null;
+        let levelLumCount = 0;
+        let currentLevel = 1;
         const decor = [];
 
-        plats.forEach((pl, pi) => {
-            if (pl.fl) return;
+        function buildLevel(level) {
+            currentLevel = level;
+            plats.length = 0;
+            spikes.length = 0;
+            lums.length = 0;
+            checkpoints.length = 0;
+            decor.length = 0;
+            lx = -600;
+            ly = 270;
 
-            for (
-                let x = pl.x + 20;
-                x < pl.x + pl.w - 20;
-                x += 46
-            ) {
-                const h = hash(x * 0.37 + pi);
+            if (level === 1) {
+                // FASE 1 — TUTORIAL: corredor simples, primeiro Psychlops e um salto.
+                ground(1120); // de x=-600 até x=520; começo seguro para aprender
+                lumLine(70, ly - 34, 4, 30);
+                spike(245, 34, ly);
+                lumArc(205, ly - 20, 7, 19, 70);
+                lumLine(350, ly - 32, 3, 27);
 
-                if (h < 0.5) {
-                    decor.push({
-                        x: x + h * 30,
-                        y: pl.y,
-                        t: h < 0.18 ? 0 : (h < 0.34 ? 1 : 2),
-                        h: hash(x)
+                // Um único abismo, com Lums desenhando a trajetória do salto.
+                lumArc(430, ly - 28, 7, 20, 84);
+                gap(90);
+                const g = ground(580, -12);
+                lumLine(g.x + 38, ly - 30, 4, 26);
+                spike(g.x + 145, 34, ly);
+                lumArc(g.x + 115, ly - 20, 6, 19, 74);
+                checkpoint(g.x + 235, ly);
+                lumLine(g.x + 290, ly - 30, 5, 27);
+                finish = { x: g.x + 480, y: ly };
+            } else {
+                // FASE 2 — PARKOUR: ilhas escalonadas e saltos com altura variável.
+                ground(1000); // fim em x=400
+                lumLine(42, ly - 34, 5, 30);
+                spike(190, 36, ly);
+                lumArc(150, ly - 22, 7, 18, 78);
+                checkpoint(32, ly);
+
+                // Travessia 1: três plataformas. Os vãos exigem escolher bem o momento do pulo.
+                {
+                    const b = lx;
+                    island(b + 30, ly - 38, 90);
+                    lumArc(b + 38, ly - 60, 4, 21, 18);
+
+                    island(b + 160, ly - 70, 82);
+                    lumLine(b + 170, ly - 98, 3, 24);
+
+                    island(b + 290, ly - 43, 92);
+                    lumArc(b + 300, ly - 65, 4, 20, 22);
+                    gap(450); // a próxima área segura começa pouco depois da última ilha
+                }
+
+                // Área de recuperação com checkpoint e inimigo existente.
+                {
+                    const g = ground(360);
+                    checkpoint(g.x + 24, ly);
+                    lumLine(g.x + 42, ly - 32, 4, 25);
+                    spike(g.x + 150, 34, ly);
+                    lumArc(g.x + 122, ly - 22, 6, 18, 70);
+                    lumLine(g.x + 220, ly - 32, 4, 25);
+                }
+
+                // Travessia 2: escada aérea mais alta, com Lums marcando o caminho.
+                {
+                    const b = lx;
+                    island(b + 48, ly - 38, 82);
+                    lumLine(b + 56, ly - 66, 3, 23);
+
+                    island(b + 160, ly - 70, 82);
+                    lumArc(b + 166, ly - 92, 4, 19, 17);
+
+                    island(b + 272, ly - 98, 82);
+                    lumLine(b + 279, ly - 125, 3, 23);
+
+                    island(b + 384, ly - 58, 86);
+                    lumArc(b + 391, ly - 80, 4, 19, 18);
+                    gap(510);
+                }
+
+                // Corredor de combate: é uma pausa breve antes de mais parkour.
+                {
+                    const g = ground(480);
+                    checkpoint(g.x + 22, ly);
+                    lumLine(g.x + 35, ly - 32, 4, 25);
+                    spike(g.x + 130, 34, ly);
+                    lumArc(g.x + 102, ly - 22, 6, 18, 74);
+                    lumLine(g.x + 225, ly - 32, 4, 25);
+                    spike(g.x + 310, 40, ly);
+                    lumArc(g.x + 278, ly - 22, 7, 17, 82);
+                }
+
+                // Travessia 3: cinco ilhas em zigue-zague sobre um vão comprido.
+                gap(85);
+                {
+                    const b = lx;
+                    const route = [
+                        { dx: 40, dy: -34, w: 86 },
+                        { dx: 165, dy: -72, w: 82 },
+                        { dx: 290, dy: -104, w: 84 },
+                        { dx: 415, dy: -58, w: 88 },
+                        { dx: 540, dy: -90, w: 86 }
+                    ];
+                    route.forEach((r, i) => {
+                        island(b + r.dx, ly + r.dy, r.w);
+                        lumArc(b + r.dx + 7, ly + r.dy - 24, 4, 18, i % 2 ? 20 : 28);
                     });
+                    gap(675);
+                }
+
+                // Platô intermediário: checkpoint, linha de Lums e trio de inimigos.
+                {
+                    const g = ground(700);
+                    checkpoint(g.x + 24, ly);
+                    lumLine(g.x + 38, ly - 32, 5, 25);
+                    [135, 365, 575].forEach((o, i) => {
+                        spike(g.x + o, [32, 40, 36][i], ly);
+                        lumArc(g.x + o - 28, ly - 22, 6, 17, 72 + i * 5);
+                    });
+                    lumLine(g.x + 235, ly - 32, 4, 25);
+                }
+
+                // Travessia 4: subida forte, descida e aterrissagens precisas.
+                gap(95);
+                {
+                    const b = lx;
+                    const route = [
+                        { dx: 45, dy: -42, w: 84 },
+                        { dx: 175, dy: -86, w: 80 },
+                        { dx: 305, dy: -112, w: 80 },
+                        { dx: 435, dy: -64, w: 86 },
+                        { dx: 565, dy: -96, w: 84 }
+                    ];
+                    route.forEach((r, i) => {
+                        island(b + r.dx, ly + r.dy, r.w);
+                        lumLine(b + r.dx + 8, ly + r.dy - 27, 3, 22);
+                    });
+                    gap(700);
+                }
+
+                // Segundo platô seguro; checkpoint para não repetir toda a travessia.
+                {
+                    const g = ground(600);
+                    checkpoint(g.x + 24, ly);
+                    lumLine(g.x + 38, ly - 32, 5, 25);
+                    spike(g.x + 155, 36, ly);
+                    lumArc(g.x + 126, ly - 22, 6, 18, 74);
+                    lumLine(g.x + 260, ly - 32, 4, 25);
+                    spike(g.x + 385, 38, ly);
+                    lumArc(g.x + 354, ly - 22, 6, 18, 78);
+                }
+
+                // Travessia 5: salto final entre quatro plataformas escalonadas.
+                gap(90);
+                {
+                    const b = lx;
+                    const route = [
+                        { dx: 40, dy: -38, w: 90 },
+                        { dx: 170, dy: -78, w: 84 },
+                        { dx: 300, dy: -48, w: 88 },
+                        { dx: 430, dy: -88, w: 90 }
+                    ];
+                    route.forEach((r, i) => {
+                        island(b + r.dx, ly + r.dy, r.w);
+                        lumArc(b + r.dx + 5, ly + r.dy - 24, 4, 18, 22 + i * 2);
+                    });
+                    gap(570);
+                }
+
+                // Último corredor: quatro Psychlops, Lums e placa de saída.
+                {
+                    const g = ground(1000);
+                    checkpoint(g.x + 24, ly);
+                    lumLine(g.x + 40, ly - 32, 5, 25);
+                    [145, 355, 570, 790].forEach((o, i) => {
+                        spike(g.x + o, [34, 42, 36, 48][i], ly);
+                        lumArc(g.x + o - 30, ly - 22, 7, 17, 75 + i * 4);
+                    });
+                    lumLine(g.x + 600, ly - 32, 4, 25);
+                    finish = { x: g.x + 900, y: ly };
                 }
             }
-        });
+
+            levelLumCount = lums.length;
+
+            // Decoração do chão recalculada para a fase atual.
+            plats.forEach((pl, pi) => {
+                if (pl.fl) return;
+
+                for (let x = pl.x + 20; x < pl.x + pl.w - 20; x += 46) {
+                    const h = hash(x * 0.37 + pi);
+                    if (h < 0.5) {
+                        decor.push({
+                            x: x + h * 30,
+                            y: pl.y,
+                            t: h < 0.18 ? 0 : (h < 0.34 ? 1 : 2),
+                            h: hash(x)
+                        });
+                    }
+                }
+            });
+        }
+
+        // A primeira fase é carregada antes da tela de título.
+        buildLevel(1);
 
         // ------------------------------------------------------------------
         // ESTADO DO JOGO
@@ -1341,6 +1654,7 @@
             gotCount = 0;
 
             checkpoints.forEach(c => c.active = false);
+            spikes.forEach(s => s.dead = false);
 
             respawn = {
                 x: 0,
@@ -1373,6 +1687,79 @@
             runBlend = 0;
             state = 'play';
             jumpBuf = 0;
+            lastHud = '';
+            lastLumCount = -1;
+        }
+
+        // A tela inicial usa exclusivamente logoInic.png; não usa o ícone do site.
+        (function setupMenuLogo() {
+            const img = document.getElementById('menu-logo');
+            const wordmark = document.getElementById('menu-wordmark');
+            img.addEventListener('load', () => { wordmark.hidden = true; });
+            img.addEventListener('error', () => {
+                img.hidden = true;
+                wordmark.hidden = false;
+            }, { once: true });
+            img.src = 'logoInic.png';
+        })();
+
+        // Música exclusiva do menu inicial. Ela para quando a tela de título fecha.
+        const titleScreenMusic = new Audio('sounds/musics/Title_Screen.mp3');
+        titleScreenMusic.preload = 'auto';
+        titleScreenMusic.loop = true;
+        titleScreenMusic.volume = 0.45;
+
+        function playTitleScreenMusic() {
+            if (state !== 'title' || !titleScreenMusic.paused) return;
+            const playback = titleScreenMusic.play();
+            // Alguns navegadores bloqueiam autoplay até haver interação do usuário.
+            if (playback && typeof playback.catch === 'function') {
+                playback.catch(() => {});
+            }
+        }
+
+        function stopTitleScreenMusic() {
+            titleScreenMusic.pause();
+            titleScreenMusic.currentTime = 0;
+        }
+
+        // Tenta iniciar ao abrir e tenta novamente se o usuário interagir com o menu.
+        playTitleScreenMusic();
+        document.getElementById('main-menu').addEventListener('pointerdown', playTitleScreenMusic);
+
+        function launchFromMenu() {
+            if (state !== 'title') return;
+            const menu = document.getElementById('main-menu');
+            menu.classList.add('menu-leaving');
+            startGame();
+            window.setTimeout(() => {
+                menu.hidden = true;
+                menu.classList.remove('menu-leaving');
+                stopTitleScreenMusic();
+            }, 250);
+        }
+
+        document.getElementById('start-game-btn').addEventListener('click', launchFromMenu);
+        window.addEventListener('keydown', (e) => {
+            if (state === 'title' && ['Enter', 'Space'].includes(e.code) && !e.repeat) {
+                e.preventDefault();
+                launchFromMenu();
+            }
+        });
+
+        function enterLevel(level) {
+            buildLevel(level);
+            resetRun();
+            placePlayer();
+            walkBlend = 0;
+            runBlend = 0;
+            airBlend = 0;
+            winT = 0;
+            jumpHeld = false;
+            state = 'play';
+            camX = 0;
+            lastHud = '';
+            lastLumCount = -1;
         }
 
         function die(pop) {
@@ -1395,13 +1782,11 @@
         // ------------------------------------------------------------------
 
         function pressJump() {
-            if (state === 'title') {
-                startGame();
-                return;
-            }
+            // A tela inicial só sai pelo botão JOGAR ou por Enter/Espaço.
+            if (state === 'title') return;
 
             if (state === 'win') {
-                if (winT > 0.7) startGame();
+                if (winT > 0.7) enterLevel(currentLevel === 1 ? 2 : 1);
                 return;
             }
 
@@ -2353,6 +2738,7 @@
 
         // Colisão: círculo do Psychlops contra o retângulo do Rayman.
         function psyHits(s) {
+            if (s.dead) return false;
             const g = psyGeom(s);
 
             const left = p.x - 5, right = p.x + 5;
@@ -2728,7 +3114,7 @@
             });
 
             spikes.forEach(s => {
-                if (s.x - 80 < x1 && s.x + s.w + 80 > x0) {
+                if (!s.dead && s.x - 80 < x1 && s.x + s.w + 80 > x0) {
                     drawSpike(s);
                 }
             });
@@ -3097,29 +3483,39 @@
                 ctx.globalAlpha = 1;
 
                 drawText(
-                    'Segure para pular mais alto',
+                    'Fase 1: tutorial  •  Fase 2: parkour com Lums e Psychlops',
                     W / 2,
                     H * 0.40,
                     H * 0.03,
                     '#d8f5e0'
                 );
             } else if (state === 'win') {
-                ctx.fillStyle = 'rgba(0,0,0,0.25)';
+                ctx.fillStyle = 'rgba(0,0,0,0.34)';
                 ctx.fillRect(0, 0, W, H);
 
                 drawText(
-                    'FASE COMPLETA!',
+                    currentLevel === 1 ? 'FASE 1 CONCLUÍDA!' : 'JORNADA CONCLUÍDA!',
                     W / 2,
-                    H * 0.3,
-                    H * 0.1,
+                    H * 0.29,
+                    H * 0.085,
                     '#FFE94D'
                 );
 
                 drawText(
-                    'Lums: ' + gotCount + ' / ' + TOTAL_LUMS,
+                    'Lums: ' + gotCount + ' / ' + levelLumCount,
                     W / 2,
-                    H * 0.4,
-                    H * 0.05
+                    H * 0.39,
+                    H * 0.045
+                );
+
+                drawText(
+                    currentLevel === 1
+                        ? 'Tutorial concluído — o parkour começa agora.'
+                        : 'Você dominou as plataformas e os Psychlops!',
+                    W / 2,
+                    H * 0.455,
+                    H * 0.033,
+                    '#e5fff2'
                 );
 
                 if (winT > 0.7) {
@@ -3127,10 +3523,12 @@
                         0.75 + Math.sin(time * 4) * 0.25;
 
                     drawText(
-                        'Toque para jogar de novo',
+                        currentLevel === 1
+                            ? 'Toque / ESPAÇO para entrar na Fase 2'
+                            : 'Toque / ESPAÇO para voltar ao início',
                         W / 2,
-                        H * 0.48,
-                        H * 0.04
+                        H * 0.53,
+                        H * 0.038
                     );
 
                     ctx.globalAlpha = 1;
@@ -3143,6 +3541,50 @@
                     H * 0.08,
                     '#ffb3a7'
                 );
+            }
+        }
+
+        function updateGuideHud() {
+            if (state !== 'play') {
+                guideHud.style.display = 'none';
+                return;
+            }
+
+            guideHud.style.display = 'block';
+            if (currentLevel === 1) {
+                if (p.x < 115) {
+                    guideHud.textContent = 'TUTORIAL • Rayman corre sozinho. Pule com ESPAÇO / ↑ ou com o botão ⤒.';
+                } else if (p.x < 315) {
+                    guideHud.textContent = 'Psychlops à frente! Pule por cima ou ataque de perto com X / J / 👊.';
+                } else if (p.x < 560) {
+                    guideHud.textContent = 'ABISMO À FRENTE • Pule antes da borda; segure o botão para saltar mais alto.';
+                } else if (p.x < 850) {
+                    guideHud.textContent = 'Pegue os Lums no ar e aterrisse na plataforma seguinte.';
+                } else {
+                    guideHud.textContent = 'Muito bem! Siga até a placa para liberar a fase de parkour.';
+                }
+            } else {
+                if (p.x < 350) {
+                    guideHud.textContent = 'FASE 2 • PARKOUR — as ilhas têm alturas diferentes. Encontre o ritmo dos saltos.';
+                } else if (p.x < 810) {
+                    guideHud.textContent = 'Salte ilha por ilha: mire na superfície, não apenas do outro lado do vão.';
+                } else if (p.x < 1320) {
+                    guideHud.textContent = 'Checkpoint à frente! Use os Lums como trilha e ataque os Psychlops de perto.';
+                } else if (p.x < 2280) {
+                    guideHud.textContent = 'SEGUNDA TRAVESSIA • suba e desça entre as plataformas sem perder o embalo.';
+                } else if (p.x < 2960) {
+                    guideHud.textContent = 'TRAVESSIA 3 • cinco ilhas em zigue-zague; cada aterrissagem prepara o próximo salto.';
+                } else if (p.x < 3750) {
+                    guideHud.textContent = 'Platô de combate: elimine ou salte os Psychlops e guarde o impulso para o próximo vão.';
+                } else if (p.x < 4455) {
+                    guideHud.textContent = 'TRAVESSIA 4 • subida alta seguida de descida. Os Lums indicam a rota.';
+                } else if (p.x < 5145) {
+                    guideHud.textContent = 'Checkpoint alcançado. Prepare-se para a última sequência de plataformas.';
+                } else if (p.x < 5715) {
+                    guideHud.textContent = 'ÚLTIMA TRAVESSIA • salte de ilha em ilha antes do corredor final.';
+                } else {
+                    guideHud.textContent = 'Corredor final! Quatro Psychlops separam Rayman da saída.';
+                }
             }
         }
 
@@ -3191,8 +3633,9 @@
             }
 
             if (state === 'play' || state === 'win') {
-                const speed =
-                    mix(110, RUN_SPEED, runBlend) * walkBlend;
+                const speed = state === 'play'
+                    ? mix(110, RUN_SPEED, runBlend) * walkBlend
+                    : 0;
 
                 p.x += speed * dt;
 
@@ -3213,8 +3656,22 @@
                         }
                     }
 
-                    // Psychlops
+                    // Psychlops: o soco elimina um inimigo próximo no momento do impacto.
                     for (const s of spikes) {
+                        if (s.dead) continue;
+
+                        const enemy = psyGeom(s);
+                        const punchPhase = punch.t / PUNCH_DUR;
+                        const inPunchWindow = punch.active &&
+                            punchPhase >= 0.30 && punchPhase <= 0.82;
+                        const closeEnough = Math.abs(enemy.cx - p.x) < 108 &&
+                            Math.abs(enemy.cy - (p.y - BODY_H * 0.55)) < 100;
+
+                        if (inPunchWindow && closeEnough) {
+                            s.dead = true;
+                            continue;
+                        }
+
                         if (psyHits(s)) {
                             die(-380);
                             break;
@@ -3346,6 +3803,7 @@
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
 
+            updateGuideHud();
             drawBackground();
 
             drawWorld(
@@ -3371,7 +3829,7 @@
                 100
             );
 
-            const txt = prog + '%';
+            const txt = 'FASE ' + currentLevel + '/2  •  ' + prog + '%';
 
             if (gotCount !== lastLumCount) {
                 lumCountEl.textContent = gotCount;
