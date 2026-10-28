@@ -183,6 +183,76 @@
         }
 
         /* -------------------------------------------------------------
+           TUTORIAL INTERATIVO (slow motion dinâmico na Fase 1)
+           ------------------------------------------------------------- */
+        .touch-btn { transition: transform 0.06s ease-out, opacity 0.25s ease, visibility 0.25s; }
+
+        .touch-btn.tut-hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .touch-btn.tut-highlight {
+            animation: tutBtnPulse 0.8s ease-in-out infinite;
+        }
+
+        @keyframes tutBtnPulse {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 6px rgba(255,226,105,.7)) drop-shadow(0 4px 6px rgba(0,0,0,.45)); }
+            50% { transform: scale(1.14); filter: drop-shadow(0 0 22px rgba(255,226,105,1)) drop-shadow(0 4px 6px rgba(0,0,0,.45)); }
+        }
+
+        #tutorial-vignette {
+            position: fixed;
+            inset: 0;
+            z-index: 4;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.35s ease;
+            background: radial-gradient(ellipse at 50% 55%, rgba(0,20,15,0) 35%, rgba(0,20,15,.55) 100%);
+        }
+
+        #tutorial-vignette.show { opacity: 1; }
+
+        #tutorial-prompt {
+            position: fixed;
+            top: 24%;
+            left: 50%;
+            transform: translate(-50%, 8px) scale(.94);
+            max-width: 86vw;
+            box-sizing: border-box;
+            padding: clamp(10px, 2vh, 18px) clamp(18px, 4vw, 38px);
+            border: 2px solid #ffe27a;
+            border-radius: 18px;
+            background: rgba(10, 36, 30, .82);
+            color: #fff;
+            text-align: center;
+            font-size: clamp(18px, 4.6vh, 36px);
+            font-weight: 900;
+            letter-spacing: .02em;
+            text-shadow: 0 3px 6px rgba(0,0,0,.7);
+            box-shadow: 0 8px 30px rgba(0,0,0,.35), 0 0 26px rgba(255,226,105,.35);
+            pointer-events: none;
+            user-select: none;
+            z-index: 7;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity .25s ease, transform .25s ease, visibility .25s;
+        }
+
+        #tutorial-prompt.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, 0) scale(1);
+            animation: tutPromptPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes tutPromptPulse {
+            0%, 100% { box-shadow: 0 8px 30px rgba(0,0,0,.35), 0 0 16px rgba(255,226,105,.25); }
+            50% { box-shadow: 0 8px 30px rgba(0,0,0,.35), 0 0 36px rgba(255,226,105,.7); }
+        }
+
+        /* -------------------------------------------------------------
            MENU INICIAL — apresentação do jogo antes da partida
            ------------------------------------------------------------- */
         #main-menu {
@@ -257,6 +327,9 @@
             font-weight: 900;
             letter-spacing: .25em;
             text-transform: uppercase;
+            text-align: center;
+            line-height: 1.4;
+            max-width: 92vw;
             text-shadow: 0 2px 10px rgba(0,0,0,.5);
         }
 
@@ -441,6 +514,169 @@
             font-weight: 800;
         }
 
+
+        /* -------------------------------------------------------------
+           SELEÇÃO DE MUNDO / FASE (depois do JOGAR AGORA)
+           ------------------------------------------------------------- */
+        .menu-shell[hidden] { display: none !important; }
+
+        .menu-back {
+            position: absolute;
+            top: max(12px, env(safe-area-inset-top));
+            left: max(14px, env(safe-area-inset-left));
+            z-index: 2;
+            padding: 8px 16px;
+            border: 1px solid rgba(255,255,255,.35);
+            border-radius: 999px;
+            background: rgba(0,22,20,.45);
+            color: #effff0;
+            font: 800 clamp(11px, 1.6vh, 13px)/1 'Segoe UI', Tahoma, sans-serif;
+            letter-spacing: .12em;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            transition: filter .13s ease, transform .13s ease;
+        }
+        .menu-back:hover { filter: brightness(1.25); transform: translateX(-2px); }
+        .menu-back[hidden] { display: none; }
+        #menu-view-worlds .menu-eyebrow,
+        #menu-view-levels .menu-eyebrow { margin-bottom: clamp(8px, 2.4vh, 22px); }
+
+        .world-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: clamp(10px, 2.4vw, 30px);
+            width: 100%;
+        }
+
+        .world-emblem {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 0;
+            border: 0;
+            background: none;
+            color: inherit;
+            font: inherit;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .world-emblem img,
+        .world-emblem .world-fallback {
+            display: block;
+            height: clamp(70px, 26vh, 190px);
+            width: auto;
+            max-width: 100%;
+            object-fit: contain;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        .world-emblem .world-fallback {
+            display: none;
+            aspect-ratio: 1.15;
+            border: 6px solid #6d0f12;
+            border-radius: 18px;
+            background: linear-gradient(180deg, #9ec9e8, #e9f6ff);
+            box-shadow: 0 0 0 3px #f5b72d;
+        }
+        .world-emblem.no-img img { display: none; }
+        .world-emblem.no-img .world-fallback { display: block; }
+
+        .world-caption {
+            font-size: clamp(10px, 1.5vh, 13px);
+            font-weight: 900;
+            letter-spacing: .16em;
+            text-shadow: 0 2px 8px rgba(0,0,0,.6);
+        }
+
+        /* Emblema principal (jogável) */
+        .world-emblem.main { cursor: pointer; transition: transform .16s ease, filter .16s ease; }
+        .world-emblem.main img,
+        .world-emblem.main .world-fallback {
+            height: clamp(96px, 38vh, 290px);
+            filter: drop-shadow(0 12px 16px rgba(0,0,0,.5)) drop-shadow(0 0 18px rgba(255,226,105,.25));
+            animation: logoFloat 4.8s ease-in-out infinite;
+        }
+        .world-emblem.main .world-caption { color: #ffe55e; font-size: clamp(12px, 2vh, 17px); }
+        .world-emblem.main:hover { transform: scale(1.06); filter: brightness(1.08); }
+        .world-emblem.main:active { transform: scale(.98); }
+        .world-emblem.main:focus-visible { outline: 3px solid #fff; outline-offset: 8px; border-radius: 16px; }
+
+        /* Versões totalmente escurecidas: mundos em desenvolvimento */
+        .world-emblem.locked { pointer-events: none; cursor: default; }
+        .world-emblem.locked img,
+        .world-emblem.locked .world-fallback { filter: brightness(0); opacity: .78; }
+        .world-emblem.locked.far img,
+        .world-emblem.locked.far .world-fallback { height: clamp(48px, 17vh, 130px); opacity: .5; }
+        .world-emblem.locked .world-caption { color: rgba(236,255,240,.55); font-size: clamp(8px, 1.2vh, 11px); letter-spacing: .12em; }
+
+        @media (max-width: 760px) {
+            .world-emblem.locked.far { display: none; }
+        }
+
+        /* Seção de fases */
+        .level-cards {
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+            gap: clamp(12px, 2.6vw, 28px);
+            width: 100%;
+        }
+
+        .level-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            flex: 0 0 clamp(170px, 30vw, 270px);
+            box-sizing: border-box;
+            text-align: center;
+            padding: clamp(12px, 2.4vh, 22px) 14px;
+            border: 2px solid rgba(255,255,255,.7);
+            border-radius: 18px;
+            color: #183b25;
+            background: linear-gradient(180deg, #fff078, #ffc83b 72%, #f5a929);
+            box-shadow: 0 5px 0 #b76c24, 0 12px 28px rgba(0,0,0,.28), inset 0 2px 0 rgba(255,255,255,.75);
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            transition: transform .13s ease, filter .13s ease, box-shadow .13s ease;
+        }
+        .level-card:hover { transform: translateY(-3px); filter: brightness(1.06); }
+        .level-card:active { transform: translateY(3px); box-shadow: 0 2px 0 #b76c24, 0 6px 14px rgba(0,0,0,.25); }
+        .level-card:focus-visible { outline: 3px solid #fff; outline-offset: 5px; }
+
+        .level-card .level-num {
+            display: grid;
+            place-items: center;
+            width: clamp(30px, 5vh, 42px);
+            height: clamp(30px, 5vh, 42px);
+            border-radius: 50%;
+            background: rgba(35,78,36,.16);
+            font-size: clamp(15px, 2.6vh, 22px);
+            font-weight: 1000;
+        }
+        .level-card .level-name { font-size: clamp(12px, 2vh, 17px); font-weight: 1000; letter-spacing: .1em; }
+        .level-card .level-sub  { font-size: clamp(10px, 1.45vh, 12px); font-weight: 700; letter-spacing: .06em; opacity: .8; }
+
+        .level-card.locked {
+            pointer-events: none;
+            cursor: default;
+            color: rgba(236,255,240,.5);
+            border-color: rgba(255,255,255,.14);
+            background: linear-gradient(180deg, #05110f, #000);
+            box-shadow: 0 8px 22px rgba(0,0,0,.35);
+        }
+        .level-card.locked .level-num { background: rgba(255,255,255,.07); }
+
+        @media (max-height: 560px) and (orientation: landscape) {
+            .level-card { padding: 8px 12px; gap: 4px; }
+        }
+
         @keyframes menuEnter {
             from { opacity: 0; transform: translateY(14px); }
             to { opacity: 1; transform: translateY(0); }
@@ -448,6 +684,46 @@
         @keyframes logoFloat {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-5px); }
+        }
+
+        /* Escolhas exibidas ao concluir uma fase. */
+        #win-actions {
+            position: fixed;
+            top: 56%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 30;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            width: min(92vw, 680px);
+            pointer-events: auto;
+        }
+        #win-actions[hidden] { display: none !important; }
+        .win-action-btn {
+            min-height: 48px;
+            max-width: 100%;
+            padding: 12px 18px;
+            border: 2px solid rgba(255,255,255,.78);
+            border-radius: 13px;
+            color: #183b25;
+            background: linear-gradient(180deg, #fff078, #ffc83b 72%, #f5a929);
+            box-shadow: 0 4px 0 #b76c24, 0 8px 20px rgba(0,0,0,.32), inset 0 2px 0 rgba(255,255,255,.7);
+            font: 900 clamp(12px, 1.8vh, 16px)/1.2 'Segoe UI', Tahoma, sans-serif;
+            letter-spacing: .035em;
+            text-align: center;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .win-action-btn:hover { filter: brightness(1.07); transform: translateY(-2px); }
+        .win-action-btn:active { transform: translateY(2px); }
+        .win-action-btn:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
+
+        @media (max-width: 560px) {
+            #win-actions { top: 55%; gap: 8px; }
+            .win-action-btn { width: min(100%, 310px); }
         }
 
         @media (max-height: 560px) and (orientation: landscape) {
@@ -463,7 +739,7 @@
 
         @media screen and (orientation: portrait) {
             #orientation-overlay { display: flex; }
-            #main-menu, #gameCanvas, #ui-layer, #touch-controls { display: none; }
+            #main-menu, #gameCanvas, #ui-layer, #touch-controls, #tutorial-prompt, #tutorial-vignette, #win-actions { display: none; }
         }
     </style>
 </head>
@@ -475,29 +751,68 @@
     </div>
 
     <main id="main-menu" role="dialog" aria-label="Menu principal do Rayman Jungle Run">
-        <div class="menu-shell">
-            <div class="menu-eyebrow">A aventura começa aqui</div>
+        <button id="menu-back-btn" class="menu-back" type="button" hidden>‹ VOLTAR</button>
+
+        <!-- 1) Tela inicial -->
+        <div class="menu-shell" id="menu-view-title">
             <div class="menu-logo-wrap">
                 <img id="menu-logo" alt="Rayman Jungle Run" draggable="false">
                 <h1 id="menu-wordmark" hidden>RAYMAN<span>JUNGLE RUN</span></h1>
-            </div>
-            <p class="menu-tagline">Corra pela floresta. Salte no desconhecido. Colete os Lums!</p>
-            <div class="menu-levels" aria-label="Duas fases">
-                <div class="menu-level-chip"><b>01</b> TUTORIAL</div>
-                <span class="menu-level-divider" aria-hidden="true"></span>
-                <div class="menu-level-chip"><b>02</b> PARKOUR</div>
             </div>
             <button id="start-game-btn" type="button">
                 <span class="play-icon" aria-hidden="true">▶</span>
                 <span>JOGAR AGORA</span>
             </button>
-            <p class="menu-press-hint">ou pressione ENTER / ESPAÇO</p>
-            <div class="menu-controls" aria-label="Controles">
-                <span class="menu-control-item"><span class="menu-key">ESPAÇO / ↑</span> PULAR</span>
-                <span class="menu-control-item"><span class="menu-key">X / Z / J</span> ATACAR</span>
+        </div>
+
+        <!-- 2) Seleção de mundo: emblema jogável + versões escurecidas (em desenvolvimento) -->
+        <div class="menu-shell" id="menu-view-worlds" hidden>
+            <div class="menu-eyebrow">Escolha o mundo</div>
+            <div class="world-row">
+                <div class="world-emblem locked far" aria-hidden="true">
+                    <img class="world-img" alt="" draggable="false">
+                    <div class="world-fallback"></div>
+                    <span class="world-caption">EM DESENVOLVIMENTO</span>
+                </div>
+                <div class="world-emblem locked" aria-hidden="true">
+                    <img class="world-img" alt="" draggable="false">
+                    <div class="world-fallback"></div>
+                    <span class="world-caption">EM DESENVOLVIMENTO</span>
+                </div>
+                <button id="world-jump-btn" class="world-emblem main" type="button" aria-label="Abrir o mundo Jump">
+                    <img class="world-img" alt="Jump" draggable="false">
+                    <div class="world-fallback"></div>
+                    <span class="world-caption">JUMP</span>
+                </button>
+                <div class="world-emblem locked" aria-hidden="true">
+                    <img class="world-img" alt="" draggable="false">
+                    <div class="world-fallback"></div>
+                    <span class="world-caption">EM DESENVOLVIMENTO</span>
+                </div>
+                <div class="world-emblem locked far" aria-hidden="true">
+                    <img class="world-img" alt="" draggable="false">
+                    <div class="world-fallback"></div>
+                    <span class="world-caption">EM DESENVOLVIMENTO</span>
+                </div>
             </div>
         </div>
-        <div class="menu-footer">RAYMAN JUNGLE RUN&nbsp; • &nbsp;DUAS FASES, UMA AVENTURA</div>
+
+        <!-- 3) Seleção de fase do mundo Jump -->
+        <div class="menu-shell" id="menu-view-levels" hidden>
+            <div class="menu-eyebrow">Jump &bull; Escolha a fase</div>
+            <div class="level-cards">
+                <button id="level-1-btn" class="level-card" type="button">
+                    <span class="level-num">1</span>
+                    <span class="level-name">O DESPERTAR</span>
+                    <span class="level-sub">Tutorial</span>
+                </button>
+                <div class="level-card locked" aria-disabled="true">
+                    <span class="level-num">2</span>
+                    <span class="level-name">A GRANDE TRAVESSIA</span>
+                    <span class="level-sub">EM DESENVOLVIMENTO</span>
+                </div>
+            </div>
+        </div>
     </main>
 
     <div id="ui-layer">
@@ -506,6 +821,8 @@
     </div>
 
     <div id="guide-hud" aria-live="polite"></div>
+    <div id="tutorial-vignette"></div>
+    <div id="tutorial-prompt" aria-live="assertive"></div>
 
     <div id="lum-hud">
         <img id="lum-hud-img" src="Sprites/lum_sprites/lum1.png" alt="Lums" draggable="false">
@@ -514,12 +831,17 @@
 
     <canvas id="gameCanvas"></canvas>
 
+    <div id="win-actions" role="group" aria-label="Opções ao concluir a fase" hidden>
+        <button id="next-level-btn" class="win-action-btn" type="button">Avançar de fase</button>
+        <button id="exit-levels-btn" class="win-action-btn" type="button">Sair para o mapa das fases</button>
+    </div>
+
     <div id="touch-controls">
-        <button id="btn-jump" class="touch-btn" type="button" aria-label="Pular">
+        <button id="btn-jump" class="touch-btn tut-hidden" type="button" aria-label="Pular">
             <img src="Sprites/extras/jumpButton.png" alt="Pular" draggable="false">
         </button>
 
-        <button id="btn-attack" class="touch-btn" type="button" aria-label="Atacar">
+        <button id="btn-attack" class="touch-btn tut-hidden" type="button" aria-label="Atacar">
             <img src="Sprites/extras/attackButton.png" alt="Atacar" draggable="false">
         </button>
     </div>
@@ -530,6 +852,9 @@
         const statusEl = document.getElementById('ui-status');
         const lumCountEl = document.getElementById('lum-hud-count');
         const guideHud = document.getElementById('guide-hud');
+        const tutorialPromptEl = document.getElementById('tutorial-prompt');
+        const tutorialVignetteEl = document.getElementById('tutorial-vignette');
+        const winActions = document.getElementById('win-actions');
         let lastLumCount = -1;
 
         // Se o lum1 não for .png, tenta .webp.
@@ -619,7 +944,7 @@
 
         raymanJumpVoices.forEach(sound => {
             sound.preload = 'auto';
-            sound.volume = 0.78;
+            sound.volume = 0.20;
         });
 
         // Som reproduzido quando o jogador vence.
@@ -646,7 +971,7 @@
             ];
 
             const sound = original.cloneNode();
-            sound.volume = 0.78;
+            sound.volume = 0.20;
             sound.play().catch(() => {});
         }
 
@@ -1431,23 +1756,25 @@
             ly = 270;
 
             if (level === 1) {
-                // FASE 1 — TUTORIAL: corredor simples, primeiro Psychlops e um salto.
-                ground(1120); // de x=-600 até x=520; começo seguro para aprender
+                // FASE 1 — O DESPERTAR (tutorial interativo com slow motion):
+                // 1º obstáculo = vala (tutorial de pulo), 2º = Psychlops (tutorial de ataque).
+                ground(1120); // de x=-600 até x=520; começo seguro para aquecer
                 lumLine(70, ly - 34, 4, 30);
-                spike(245, 34, ly);
-                lumArc(205, ly - 20, 7, 19, 70);
+                lumLine(230, ly - 32, 4, 27);
                 lumLine(350, ly - 32, 3, 27);
 
-                // Um único abismo, com Lums desenhando a trajetória do salto.
+                // Primeira vala, com Lums desenhando a trajetória do salto.
                 lumArc(430, ly - 28, 7, 20, 84);
                 gap(90);
-                const g = ground(580, -12);
+                const g = ground(680, -12);
                 lumLine(g.x + 38, ly - 30, 4, 26);
-                spike(g.x + 145, 34, ly);
-                lumArc(g.x + 115, ly - 20, 6, 19, 74);
-                checkpoint(g.x + 235, ly);
-                lumLine(g.x + 290, ly - 30, 5, 27);
-                finish = { x: g.x + 480, y: ly };
+
+                // Primeiro Psychlops (tutorial de ataque), bem depois da vala.
+                lumArc(g.x + 220, ly - 20, 6, 19, 74);
+                spike(g.x + 250, 34, ly);
+                checkpoint(g.x + 345, ly);
+                lumLine(g.x + 400, ly - 30, 5, 27);
+                finish = { x: g.x + 590, y: ly };
             } else {
                 // FASE 2 — PARKOUR: ilhas escalonadas e saltos com altura variável.
                 ground(1000); // fim em x=400
@@ -1679,7 +2006,9 @@
             runBlend = Math.max(runBlend, 0.6);
         }
 
-        function startGame() {
+        function startGame(level = 1) {
+            // Recarrega a fase escolhida para que uma nova entrada sempre comece do início.
+            buildLevel(level);
             resetRun();
             placePlayer();
 
@@ -1689,6 +2018,10 @@
             jumpBuf = 0;
             lastHud = '';
             lastLumCount = -1;
+            winActions.hidden = true;
+            stopTitleScreenMusic();
+            playLevelBackgroundMusic(true);
+            tutorialStart(currentLevel);
         }
 
         // A tela inicial usa exclusivamente logoInic.png; não usa o ícone do site.
@@ -1709,6 +2042,28 @@
         titleScreenMusic.loop = true;
         titleScreenMusic.volume = 0.45;
 
+        // Música de fundo das fases. O loop é contínuo durante a fase; só reinicia
+        // quando uma nova entrada de fase é iniciada.
+        const levelBackgroundMusic = new Audio('sounds/musics/The_Tricky_Treasure.mp3');
+        levelBackgroundMusic.preload = 'auto';
+        levelBackgroundMusic.loop = true;
+        levelBackgroundMusic.volume = 0.65;
+
+        function playLevelBackgroundMusic(restart = false) {
+            titleScreenMusic.pause();
+            if (restart) levelBackgroundMusic.currentTime = 0;
+            if (!levelBackgroundMusic.paused && !restart) return;
+            const playback = levelBackgroundMusic.play();
+            if (playback && typeof playback.catch === 'function') {
+                playback.catch(() => {});
+            }
+        }
+
+        function stopLevelBackgroundMusic(reset = true) {
+            levelBackgroundMusic.pause();
+            if (reset) levelBackgroundMusic.currentTime = 0;
+        }
+
         function playTitleScreenMusic() {
             if (state !== 'title' || !titleScreenMusic.paused) return;
             const playback = titleScreenMusic.play();
@@ -1727,11 +2082,12 @@
         playTitleScreenMusic();
         document.getElementById('main-menu').addEventListener('pointerdown', playTitleScreenMusic);
 
-        function launchFromMenu() {
+        function launchFromMenu(level = 1) {
             if (state !== 'title') return;
             const menu = document.getElementById('main-menu');
+            if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
             menu.classList.add('menu-leaving');
-            startGame();
+            startGame(level);
             window.setTimeout(() => {
                 menu.hidden = true;
                 menu.classList.remove('menu-leaving');
@@ -1739,11 +2095,104 @@
             }, 250);
         }
 
-        document.getElementById('start-game-btn').addEventListener('click', launchFromMenu);
+        // Emblema do mundo (Sprites/extras/Jump.*): mesmo caminho dos botões e da placa.
+        // Tenta várias extensões; se nenhuma existir, usa uma moldura desenhada em CSS.
+        (function setupWorldEmblems() {
+            const exts = ['png', 'webp', 'jpg', 'jpeg'];
+            document.querySelectorAll('#menu-view-worlds .world-img').forEach((img) => {
+                const holder = img.closest('.world-emblem');
+                let i = 0;
+                img.addEventListener('error', () => {
+                    i++;
+                    if (i < exts.length) {
+                        img.src = 'Sprites/extras/Jump.' + exts[i];
+                    } else {
+                        holder.classList.add('no-img');
+                    }
+                });
+                img.src = 'Sprites/extras/Jump.' + exts[0];
+            });
+        })();
+
+        // Navegação do menu: title -> worlds -> levels -> jogo
+        let menuView = 'title';
+        const menuViews = {
+            title:  document.getElementById('menu-view-title'),
+            worlds: document.getElementById('menu-view-worlds'),
+            levels: document.getElementById('menu-view-levels')
+        };
+        const menuBackBtn = document.getElementById('menu-back-btn');
+
+        function showMenuView(name) {
+            if (state !== 'title') return;
+            menuView = name;
+            Object.keys(menuViews).forEach((k) => { menuViews[k].hidden = (k !== name); });
+            menuBackBtn.hidden = (name === 'title');
+
+            const focusEl = {
+                title: 'start-game-btn',
+                worlds: 'world-jump-btn',
+                levels: 'level-1-btn'
+            }[name];
+            const el = document.getElementById(focusEl);
+            if (el) el.focus({ preventScroll: true });
+        }
+
+        function exitToLevelMap() {
+            if (state !== 'win') return;
+
+            state = 'title';
+            winActions.hidden = true;
+            tutorialReset();
+            releaseJump();
+            stopLevelBackgroundMusic(true);
+            titleScreenMusic.currentTime = 0;
+
+            const menu = document.getElementById('main-menu');
+            menu.classList.remove('menu-leaving');
+            menu.hidden = false;
+            showMenuView('levels');
+            playTitleScreenMusic();
+        }
+
+        function menuBack() {
+            if (menuView === 'levels') showMenuView('worlds');
+            else if (menuView === 'worlds') showMenuView('title');
+        }
+
+        function startLevel1FromMenu() {
+            // Única fase liberada no mapa: Fase 1 (tutorial).
+            // Cada nova entrada reinicia a música da fase desde o começo.
+            launchFromMenu(1);
+        }
+
+        document.getElementById('next-level-btn').addEventListener('click', () => {
+            if (state !== 'win' || winT <= 0.7) return;
+            enterLevel(currentLevel === 1 ? 2 : 1);
+        });
+        document.getElementById('exit-levels-btn').addEventListener('click', exitToLevelMap);
+
+        document.getElementById('start-game-btn').addEventListener('click', () => showMenuView('worlds'));
+        document.getElementById('world-jump-btn').addEventListener('click', () => showMenuView('levels'));
+        document.getElementById('level-1-btn').addEventListener('click', startLevel1FromMenu);
+        menuBackBtn.addEventListener('click', menuBack);
+
         window.addEventListener('keydown', (e) => {
-            if (state === 'title' && ['Enter', 'Space'].includes(e.code) && !e.repeat) {
+            if (state !== 'title') return;
+
+            if (e.code === 'Escape' || e.code === 'Backspace') {
                 e.preventDefault();
-                launchFromMenu();
+                menuBack();
+                return;
+            }
+
+            // Enter/Espaço avançam no menu (tratado aqui porque o handler de pulo cancela o clique nativo).
+            if (['Enter', 'Space'].includes(e.code) && !e.repeat) {
+                e.preventDefault();
+                if (e.target === menuBackBtn) menuBack();
+                else if (menuView === 'title') showMenuView('worlds');
+                else if (menuView === 'worlds') showMenuView('levels');
+                else if (menuView === 'levels') startLevel1FromMenu();
             }
         });
 
@@ -1756,16 +2205,20 @@
             airBlend = 0;
             winT = 0;
             jumpHeld = false;
+            winActions.hidden = true;
             state = 'play';
             camX = 0;
             lastHud = '';
             lastLumCount = -1;
+            playLevelBackgroundMusic(true);
+            tutorialStart(level);
         }
 
         function die(pop) {
             if (state !== 'play') return;
 
             state = 'dead';
+            tutorialReset();
             deadT = 0;
             p.vy = pop || 0;
             p.grounded = false;
@@ -1778,17 +2231,178 @@
         }
 
         // ------------------------------------------------------------------
+        // TUTORIAL INTERATIVO (Fase 1) — slow motion dinâmico
+        //   1) Antes da 1ª vala:     slow motion + só o botão de PULO (mobile) / mensagem SPACE (PC)
+        //   2) Antes do 1º inimigo:  slow motion + só o botão de ATAQUE
+        //   Ao concluir o ataque, todos os botões voltam para sempre.
+        // ------------------------------------------------------------------
+
+        const IS_MOBILE =
+            (window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches) ||
+            /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+
+        const SLOWMO_SCALE = 0.14;      // velocidade do jogo durante o tutorial (1 = normal)
+        const TUT_JUMP_LEAD = 70;       // distância (px do mundo) antes da vala em que o slow motion começa
+        const TUT_ATTACK_LEAD = 190;    // distância antes do 1º inimigo em que o slow motion começa
+
+        const TUT_TEXT = {
+            jump:   IS_MOBILE ? 'Aperte o botão de Pulo!' : 'Pressione SPACE para pular!',
+            attack: IS_MOBILE ? 'Toque no botão de ataque!' : 'Pressione X para atacar!'
+        };
+
+        // stage: 'idle' | 'jump-wait' | 'jump' | 'attack-wait' | 'attack' | 'done'
+        const tutorial = { stage: 'idle', completed: false };
+        let timeScale = 1;
+        let tutPitX = 0;
+
+        const btnJumpEl = document.getElementById('btn-jump');
+        const btnAttackEl = document.getElementById('btn-attack');
+
+        // mode: 'all' | 'none' | 'jump' (pulo em destaque) | 'jump-only' (só pulo, sem destaque)
+        //       | 'attack' (pulo normal + ataque em destaque)
+        function setTouchButtons(mode) {
+            const showJump = mode === 'all' || mode === 'jump' || mode === 'jump-only' || mode === 'attack';
+            const showAttack = mode === 'all' || mode === 'attack';
+
+            btnJumpEl.classList.toggle('tut-hidden', !showJump);
+            btnAttackEl.classList.toggle('tut-hidden', !showAttack);
+            btnJumpEl.classList.toggle('tut-highlight', mode === 'jump');
+            btnAttackEl.classList.toggle('tut-highlight', mode === 'attack');
+        }
+
+        function showTutorialPrompt(text) {
+            tutorialPromptEl.textContent = text;
+            tutorialPromptEl.classList.add('show');
+            tutorialVignetteEl.classList.add('show');
+        }
+
+        function hideTutorialPrompt() {
+            tutorialPromptEl.classList.remove('show');
+            tutorialVignetteEl.classList.remove('show');
+        }
+
+        function tutorialActive() {
+            return tutorial.stage === 'jump' || tutorial.stage === 'attack';
+        }
+
+        function tutorialStart(level) {
+            timeScale = 1;
+            hideTutorialPrompt();
+
+            if (level === 1 && !tutorial.completed) {
+                // A 1ª vala é o fim do primeiro trecho de chão.
+                tutPitX = plats[0].x + plats[0].w;
+                tutorial.stage = 'jump-wait';
+                setTouchButtons('none');   // nenhum botão na tela até a hora certa
+            } else {
+                tutorial.stage = 'done';
+                setTouchButtons('all');
+            }
+        }
+
+        // Se o jogador morrer no meio do tutorial, ele recomeça do início da fase.
+        function tutorialReset() {
+            if (tutorial.stage === 'idle' || tutorial.stage === 'done') return;
+            hideTutorialPrompt();
+            tutorial.stage = tutorial.completed ? 'done' : 'jump-wait';
+            setTouchButtons(tutorial.completed ? 'all' : 'none');
+        }
+
+        function startJumpTutorial() {
+            tutorial.stage = 'jump';
+            setTouchButtons('jump');                       // botão de pulo aparece junto com o slow motion (PC e mobile)
+            showTutorialPrompt(TUT_TEXT.jump);
+        }
+
+        function startAttackTutorial() {
+            tutorial.stage = 'attack';
+            setTouchButtons('attack');                    // só o botão de ataque
+            showTutorialPrompt(TUT_TEXT.attack);
+        }
+
+        // Chamado quando o pulo é de fato executado (stepPhysics).
+        function onTutorialJump() {
+            if (tutorial.stage !== 'jump') return;
+            tutorial.stage = 'attack-wait';
+            hideTutorialPrompt();
+            setTouchButtons('jump-only'); // botão de pulo aparece assim que o slow motion do pulo acaba
+        }
+
+        function completeTutorial() {
+            tutorial.stage = 'done';
+            tutorial.completed = true;
+            hideTutorialPrompt();
+            setTouchButtons('all'); // HUD padrão volta permanentemente
+        }
+
+        // Chamado quando o ataque é executado (pressAttack).
+        function onTutorialAttack() {
+            if (tutorial.stage === 'attack') completeTutorial();
+        }
+
+        // Chamado todo frame durante o jogo.
+        function updateTutorial() {
+            if (state !== 'play') return;
+
+            const enemy = spikes.length ? spikes[0] : null;
+            const enemyDx = enemy ? psyGeom(enemy).cx - p.x : -999;
+
+            switch (tutorial.stage) {
+                case 'jump-wait':
+                    if (p.x >= tutPitX - TUT_JUMP_LEAD) startJumpTutorial();
+                    break;
+
+                case 'jump':
+                    // Segurança: já passou da vala sem pular pelo caminho normal.
+                    if (p.x > tutPitX + 140) onTutorialJump();
+                    break;
+
+                case 'attack-wait':
+                    if (enemy && !enemy.dead && enemyDx <= TUT_ATTACK_LEAD && enemyDx > -20) {
+                        startAttackTutorial();
+                    } else if (!enemy || enemy.dead || enemyDx <= -20) {
+                        completeTutorial();
+                    }
+                    break;
+
+                case 'attack':
+                    // Segurança: inimigo derrotado ou já ultrapassado.
+                    if (!enemy || enemy.dead || enemyDx <= -40) completeTutorial();
+                    break;
+            }
+        }
+
+        // Suaviza a entrada/saída do slow motion.
+        function updateTimeScale(realDt) {
+            const target = tutorialActive() ? SLOWMO_SCALE : 1;
+            const rate = target < timeScale ? 14 : 10;
+
+            timeScale += (target - timeScale) * Math.min(1, realDt * rate);
+
+            if (Math.abs(target - timeScale) < 0.005) timeScale = target;
+        }
+
+        // ------------------------------------------------------------------
         // CONTROLES (mouse/toque e teclado)
         // ------------------------------------------------------------------
+
+        // Durante o tutorial da Fase 1, o jogador só pode pular no slow motion do pulo
+        // e só pode atacar no slow motion do ataque.
+        function canJumpNow() {
+            return tutorial.stage === 'done' || tutorial.stage === 'jump';
+        }
+
+        function canAttackNow() {
+            return tutorial.stage === 'done' || tutorial.stage === 'attack';
+        }
 
         function pressJump() {
             // A tela inicial só sai pelo botão JOGAR ou por Enter/Espaço.
             if (state === 'title') return;
 
-            if (state === 'win') {
-                if (winT > 0.7) enterLevel(currentLevel === 1 ? 2 : 1);
-                return;
-            }
+            if (state === 'win') return;
+
+            if (!canJumpNow()) return;
 
             jumpBuf = BUFFER;
             jumpHeld = true;
@@ -1820,6 +2434,7 @@
         const JUMP_KEYS = ['Space', 'ArrowUp', 'KeyW', 'Enter'];
 
         window.addEventListener('keydown', (e) => {
+            if (winActions.contains(e.target)) return;
             if (JUMP_KEYS.includes(e.code)) {
                 e.preventDefault();
 
@@ -1844,7 +2459,11 @@
         // Ataque: por enquanto só registra o comando; a animação virá depois.
         function pressAttack() {
             if (state !== 'play') return;
+            if (!canAttackNow()) return;
             triggerPunch();
+
+            // Tutorial: o ataque foi executado, slow motion termina e a HUD completa volta.
+            onTutorialAttack();
         }
 
         function bindTouchButton(id, onPress, onRelease) {
@@ -1909,6 +2528,9 @@
 
                 // Voz aleatória de pulo, com chance e intervalo anti-repetição.
                 playRaymanJumpVoice();
+
+                // Tutorial: o pulo foi executado, o jogo volta à velocidade normal.
+                onTutorialJump();
             }
 
             // Soltar o botão corta o pulo (pulo variável)
@@ -3483,7 +4105,7 @@
                 ctx.globalAlpha = 1;
 
                 drawText(
-                    'Fase 1: tutorial  •  Fase 2: parkour com Lums e Psychlops',
+                    'Fase 1: o despertar  •  Fase 2: a grande travessia',
                     W / 2,
                     H * 0.40,
                     H * 0.03,
@@ -3510,7 +4132,7 @@
 
                 drawText(
                     currentLevel === 1
-                        ? 'Tutorial concluído — o parkour começa agora.'
+                        ? 'A selva já conhece o seu nome — a grande travessia começa agora!'
                         : 'Você dominou as plataformas e os Psychlops!',
                     W / 2,
                     H * 0.455,
@@ -3518,21 +4140,7 @@
                     '#e5fff2'
                 );
 
-                if (winT > 0.7) {
-                    ctx.globalAlpha =
-                        0.75 + Math.sin(time * 4) * 0.25;
-
-                    drawText(
-                        currentLevel === 1
-                            ? 'Toque / ESPAÇO para entrar na Fase 2'
-                            : 'Toque / ESPAÇO para voltar ao início',
-                        W / 2,
-                        H * 0.53,
-                        H * 0.038
-                    );
-
-                    ctx.globalAlpha = 1;
-                }
+                // As escolhas de avanço ou saída são exibidas em botões HTML sobre o canvas.
             } else if (state === 'dead') {
                 drawText(
                     'Ops!',
@@ -3545,46 +4153,26 @@
         }
 
         function updateGuideHud() {
-            if (state !== 'play') {
+            // Durante o tutorial interativo, só a mensagem do tutorial aparece.
+            if (state !== 'play' || tutorialActive()) {
                 guideHud.style.display = 'none';
                 return;
             }
 
             guideHud.style.display = 'block';
             if (currentLevel === 1) {
-                if (p.x < 115) {
-                    guideHud.textContent = 'TUTORIAL • Rayman corre sozinho. Pule com ESPAÇO / ↑ ou com o botão ⤒.';
-                } else if (p.x < 315) {
-                    guideHud.textContent = 'Psychlops à frente! Pule por cima ou ataque de perto com X / J / 👊.';
-                } else if (p.x < 560) {
-                    guideHud.textContent = 'ABISMO À FRENTE • Pule antes da borda; segure o botão para saltar mais alto.';
-                } else if (p.x < 850) {
-                    guideHud.textContent = 'Pegue os Lums no ar e aterrisse na plataforma seguinte.';
+                if (p.x < 400) {
+                    guideHud.textContent = 'Siga a trilha dourada dos Lums. A selva não espera ninguém!';
+                } else if (p.x < 700) {
+                    guideHud.textContent = 'O chão desaparece logo adiante. Confie no seu salto!';
+                } else if (p.x < 1000) {
+                    guideHud.textContent = 'Um Psychlops bloqueia o caminho. Mostre a força do seu punho!';
                 } else {
-                    guideHud.textContent = 'Muito bem! Siga até a placa para liberar a fase de parkour.';
+                    guideHud.textContent = 'Você está pegando o jeito! Alcance a placa e mergulhe no parkour.';
                 }
             } else {
-                if (p.x < 350) {
-                    guideHud.textContent = 'FASE 2 • PARKOUR — as ilhas têm alturas diferentes. Encontre o ritmo dos saltos.';
-                } else if (p.x < 810) {
-                    guideHud.textContent = 'Salte ilha por ilha: mire na superfície, não apenas do outro lado do vão.';
-                } else if (p.x < 1320) {
-                    guideHud.textContent = 'Checkpoint à frente! Use os Lums como trilha e ataque os Psychlops de perto.';
-                } else if (p.x < 2280) {
-                    guideHud.textContent = 'SEGUNDA TRAVESSIA • suba e desça entre as plataformas sem perder o embalo.';
-                } else if (p.x < 2960) {
-                    guideHud.textContent = 'TRAVESSIA 3 • cinco ilhas em zigue-zague; cada aterrissagem prepara o próximo salto.';
-                } else if (p.x < 3750) {
-                    guideHud.textContent = 'Platô de combate: elimine ou salte os Psychlops e guarde o impulso para o próximo vão.';
-                } else if (p.x < 4455) {
-                    guideHud.textContent = 'TRAVESSIA 4 • subida alta seguida de descida. Os Lums indicam a rota.';
-                } else if (p.x < 5145) {
-                    guideHud.textContent = 'Checkpoint alcançado. Prepare-se para a última sequência de plataformas.';
-                } else if (p.x < 5715) {
-                    guideHud.textContent = 'ÚLTIMA TRAVESSIA • salte de ilha em ilha antes do corredor final.';
-                } else {
-                    guideHud.textContent = 'Corredor final! Quatro Psychlops separam Rayman da saída.';
-                }
+                // Fase 2: sem textos de guia na tela.
+                guideHud.style.display = 'none';
             }
         }
 
@@ -3593,10 +4181,14 @@
         // ------------------------------------------------------------------
 
         function gameLoop(now) {
-            const dt = Math.min(
+            const realDt = Math.min(
                 (now - lastTime) / 1000,
                 0.05
             );
+
+            // Slow motion do tutorial: toda a simulação usa dt escalado.
+            updateTimeScale(realDt);
+            const dt = realDt * timeScale;
 
             lastTime = now;
             time = (now - startTime) / 1000;
@@ -3640,6 +4232,7 @@
                 p.x += speed * dt;
 
                 stepPhysics(dt);
+                updateTutorial();
 
                 if (state === 'play') {
                     // Lums
@@ -3716,6 +4309,7 @@
             if (state === 'win') {
                 winT += dt;
             }
+            winActions.hidden = state !== 'win' || winT <= 0.7;
 
             // Passos e animação
             phase +=
