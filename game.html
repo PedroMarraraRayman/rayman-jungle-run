@@ -2,11 +2,20 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Rayman Jungle Run">
+    <meta name="theme-color" content="#06201c">
+    <link rel="apple-touch-icon" href="icon.ico">
     <link rel="icon" type="image/png" href="icon.ico">
     <title>Rayman Jungle Run</title>
     <style>
+        html { background: #06201c; width: 100%; height: 100%; overflow: hidden; }
         body {
+            width: 100%;
+            height: 100%;
             margin: 0;
             padding: 0;
             overflow: hidden;
@@ -21,8 +30,10 @@
 
         canvas {
             display: block;
-            width: 100vw;
-            height: 100vh;
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
         }
 
         #ui-layer {
@@ -102,8 +113,8 @@
             position: fixed;
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100vh;
+            width: 100%;
+            height: 100%;
             background-color: #2c3e50;
             color: white;
             z-index: 9999;
@@ -175,6 +186,7 @@
             -webkit-user-drag: none;
         }
 
+        #btn-attack.cooling { opacity: .45; filter: grayscale(.6); }
         .touch-btn.pressed { transform: scale(0.99); filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)) brightness(0.85); }
 
         #btn-jump {
@@ -262,13 +274,13 @@
             display: grid;
             place-items: center;
             overflow: hidden;
-            padding: clamp(16px, 3vh, 32px) 22px;
+            padding: max(clamp(16px, 3vh, 32px), env(safe-area-inset-top)) max(22px, env(safe-area-inset-right)) max(clamp(16px, 3vh, 32px), env(safe-area-inset-bottom)) max(22px, env(safe-area-inset-left));
             box-sizing: border-box;
             color: #fff;
             background:
-                radial-gradient(ellipse at 50% 18%, rgba(82, 210, 112, .28), transparent 42%),
-                linear-gradient(115deg, rgba(4, 24, 30, .94), rgba(8, 60, 45, .82) 52%, rgba(6, 31, 31, .95)),
-                url('Sprites/backgrounds/background1.jpg') center / cover no-repeat,
+                radial-gradient(ellipse at 50% 50%, rgba(0, 20, 15, 0) 40%, rgba(0, 20, 15, .38) 100%),
+                linear-gradient(180deg, rgba(0, 18, 14, .18), rgba(0, 18, 14, .34)),
+                url('Sprites/backgrounds/background2.png') center / cover no-repeat,
                 #092d2b;
             opacity: 1;
             transform: scale(1);
@@ -346,16 +358,18 @@
             width: min(66vw, 560px);
             height: clamp(92px, 24vh, 205px);
             display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-rows: minmax(0, 1fr);
             place-items: center;
             margin: -2px 0;
+            min-height: 0;
         }
 
         #menu-logo {
             display: block;
-            max-width: 100%;
-            max-height: 100%;
-            width: auto;
-            height: auto;
+            width: 100%;
+            height: 100%;
+            min-height: 0;
             object-fit: contain;
             filter: drop-shadow(0 10px 12px rgba(0,0,0,.42));
             animation: logoFloat 4.8s ease-in-out infinite;
@@ -541,6 +555,19 @@
         #menu-view-worlds .menu-eyebrow,
         #menu-view-levels .menu-eyebrow { margin-bottom: clamp(8px, 2.4vh, 22px); }
 
+        /* Título das seleções proporcional ao tamanho das molduras */
+        #menu-view-worlds .menu-eyebrow,
+        #menu-view-levels .menu-eyebrow,
+        #menu-view-levels-punch .menu-eyebrow {
+            font-size: clamp(15px, 3vh, 28px);
+            gap: 16px;
+        }
+        #menu-view-worlds .menu-eyebrow::before, #menu-view-worlds .menu-eyebrow::after,
+        #menu-view-levels .menu-eyebrow::before, #menu-view-levels .menu-eyebrow::after,
+        #menu-view-levels-punch .menu-eyebrow::before, #menu-view-levels-punch .menu-eyebrow::after {
+            width: clamp(34px, 7vh, 70px);
+        }
+
         .world-row {
             display: flex;
             align-items: center;
@@ -593,10 +620,11 @@
         }
 
         /* Emblema principal (jogável) */
-        .world-emblem.main { cursor: pointer; transition: transform .16s ease, filter .16s ease; }
+        #menu-view-worlds { width: min(1900px, 100%); }
+        .world-emblem.main { flex: 0 0 auto; cursor: pointer; transition: transform .16s ease, filter .16s ease; }
         .world-emblem.main img,
         .world-emblem.main .world-fallback {
-            height: clamp(96px, 38vh, 290px);
+            height: clamp(110px, 37vh, 340px);
             filter: drop-shadow(0 12px 16px rgba(0,0,0,.5)) drop-shadow(0 0 18px rgba(255,226,105,.25));
             animation: logoFloat 4.8s ease-in-out infinite;
         }
@@ -609,12 +637,13 @@
         .world-emblem.locked { pointer-events: none; cursor: default; }
         .world-emblem.locked img,
         .world-emblem.locked .world-fallback { filter: brightness(0); opacity: .78; }
-        .world-emblem.locked.far img,
-        .world-emblem.locked.far .world-fallback { height: clamp(48px, 17vh, 130px); opacity: .5; }
+        .world-emblem.locked img,
+        .world-emblem.locked .world-fallback { height: clamp(60px, 20vh, 170px); }
+        .world-emblem.locked.far { display: none; }
         .world-emblem.locked .world-caption { color: rgba(236,255,240,.55); font-size: clamp(8px, 1.2vh, 11px); letter-spacing: .12em; }
 
-        @media (max-width: 760px) {
-            .world-emblem.locked.far { display: none; }
+        @media (max-width: 1500px) {
+            .world-emblem.locked { display: none; }
         }
 
         /* Seção de fases */
@@ -673,6 +702,99 @@
         }
         .level-card.locked .level-num { background: rgba(255,255,255,.07); }
 
+        /* Seleção de fases no estilo do jogo original: moldura do mundo + trilha de ovais */
+        .levels-emblem { pointer-events: none; }
+        .levels-emblem .world-caption { color: #ffe55e; font-size: clamp(12px, 2vh, 17px); }
+        .levels-emblem img,
+        .levels-emblem .world-fallback {
+            height: clamp(120px, 40vh, 360px);
+            filter: drop-shadow(0 10px 14px rgba(0,0,0,.5));
+        }
+
+        .level-track {
+            --node-w: clamp(104px, 17vw, 168px);
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            margin-top: clamp(10px, 3vh, 28px);
+        }
+        .level-track:empty { display: none; }
+        .level-track::before {
+            content: "";
+            position: absolute;
+            top: clamp(18px, 3vh, 24px);
+            left: calc(var(--node-w) / 2);
+            right: calc(var(--node-w) / 2);
+            height: 4px;
+            border-radius: 4px;
+            background: rgba(0,0,0,.4);
+            box-shadow: 0 0 0 2px rgba(255,255,255,.22);
+        }
+        .level-track.single::before { display: none; }
+
+        .level-node-wrap {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            width: var(--node-w);
+            text-align: center;
+        }
+        .level-node {
+            display: grid;
+            place-items: center;
+            width: clamp(52px, 8.6vh, 72px);
+            height: clamp(30px, 5.1vh, 42px);
+            padding: 0;
+            border-radius: 50%;
+            border: 3px solid #6d0f12;
+            color: #5a1d05;
+            font: 1000 clamp(13px, 2.2vh, 18px) 'Segoe UI', Tahoma, sans-serif;
+            background: radial-gradient(ellipse at 50% 30%, #fff6a3, #ffc83b 62%, #f5a929);
+            box-shadow: 0 0 0 2px #f5b72d, 0 6px 12px rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.7);
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            transition: transform .13s ease, filter .13s ease;
+        }
+        button.level-node:hover { transform: scale(1.12); filter: brightness(1.08); }
+        button.level-node:active { transform: scale(.96); }
+        button.level-node:focus-visible { outline: 3px solid #fff; outline-offset: 5px; }
+        .level-node.locked {
+            cursor: default;
+            color: rgba(236,255,240,.5);
+            border-color: #1a0708;
+            background: radial-gradient(ellipse at 50% 30%, #2a2f2f, #0a0f0f 70%);
+            box-shadow: 0 0 0 2px rgba(255,255,255,.18), 0 5px 10px rgba(0,0,0,.4);
+        }
+        .level-node-name {
+            font-size: clamp(10px, 1.7vh, 14px);
+            font-weight: 900;
+            letter-spacing: .1em;
+            color: #ffe55e;
+            text-shadow: 0 2px 8px rgba(0,0,0,.7);
+        }
+        .level-node-sub {
+            margin-top: -3px;
+            font-size: clamp(8px, 1.3vh, 11px);
+            font-weight: 800;
+            letter-spacing: .1em;
+            color: rgba(236,255,240,.75);
+            text-shadow: 0 2px 8px rgba(0,0,0,.7);
+        }
+        .level-node-wrap.is-locked .level-node-name { color: rgba(236,255,240,.55); }
+
+        .world-empty-note {
+            margin: clamp(10px, 3vh, 26px) 0 0;
+            font-size: clamp(10px, 1.5vh, 13px);
+            font-weight: 900;
+            letter-spacing: .16em;
+            color: rgba(236,255,240,.55);
+            text-shadow: 0 2px 8px rgba(0,0,0,.6);
+        }
+
         @media (max-height: 560px) and (orientation: landscape) {
             .level-card { padding: 8px 12px; gap: 4px; }
         }
@@ -684,6 +806,269 @@
         @keyframes logoFloat {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-5px); }
+        }
+
+
+        /* -------------------------------------------------------------
+           GALERIA DE ARTE — mesma paleta das molduras do jogo
+           (vinho #6d0f12 + dourado #f5b72d sobre o verde da selva)
+           ------------------------------------------------------------- */
+        .menu-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: clamp(9px, 1.8vh, 16px);
+        }
+
+        #gallery-btn {
+            position: relative;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 13px;
+            min-width: clamp(220px, 28vw, 310px);
+            min-height: clamp(44px, 7vh, 58px);
+            padding: 0 28px;
+            border: 2px solid #f5b72d;
+            border-radius: 16px;
+            color: #fff4a5;
+            background: linear-gradient(180deg, #3a9a62, #1f7048 72%, #155238);
+            box-shadow: 0 5px 0 #6d0f12, 0 12px 28px rgba(0,0,0,.28), inset 0 2px 0 rgba(255,255,255,.28);
+            font: 1000 clamp(13px, 1.9vh, 17px)/1 'Segoe UI', Tahoma, sans-serif;
+            letter-spacing: .13em;
+            text-shadow: 0 2px 0 rgba(0,0,0,.35);
+            cursor: pointer;
+            transition: transform .13s ease, filter .13s ease, box-shadow .13s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #gallery-btn .gallery-icon {
+            display: grid;
+            place-items: center;
+            width: 27px;
+            height: 27px;
+            border-radius: 50%;
+            background: rgba(255,226,105,.16);
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        #gallery-btn:hover { transform: translateY(-3px); filter: brightness(1.1); box-shadow: 0 8px 0 #6d0f12, 0 16px 30px rgba(0,0,0,.3), inset 0 2px 0 rgba(255,255,255,.34); }
+        #gallery-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #6d0f12, 0 6px 14px rgba(0,0,0,.25); }
+        #gallery-btn:focus-visible { outline: 3px solid #fff; outline-offset: 5px; }
+
+        #menu-view-gallery {
+            height: 100%;
+            min-height: 0;
+            justify-content: flex-start;
+            gap: 6px;
+            padding-top: clamp(30px, 6vh, 46px);
+            box-sizing: border-box;
+        }
+        #menu-view-gallery .menu-eyebrow { margin-bottom: 0; font-size: clamp(11px, 1.8vh, 15px); }
+        .gallery-count {
+            margin: 0 0 4px;
+            color: rgba(236,255,240,.7);
+            font-size: clamp(10px, 1.4vh, 12px);
+            font-weight: 700;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+        }
+
+        .gallery-scroll {
+            flex: 1 1 auto;
+            min-height: 0;
+            width: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 10px clamp(6px, 2vw, 18px) max(26px, env(safe-area-inset-bottom));
+            box-sizing: border-box;
+            touch-action: pan-y;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: #f5b72d rgba(0,22,20,.45);
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 18px), transparent 100%);
+                    mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 18px), transparent 100%);
+        }
+        .gallery-scroll::-webkit-scrollbar { width: 7px; }
+        .gallery-scroll::-webkit-scrollbar-track { background: rgba(0,22,20,.45); border-radius: 9px; }
+        .gallery-scroll::-webkit-scrollbar-thumb { background: #f5b72d; border-radius: 9px; }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(clamp(132px, 19vw, 205px), 1fr));
+            gap: clamp(14px, 2.4vw, 24px) clamp(12px, 2vw, 22px);
+            width: 100%;
+        }
+
+        .art-card {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+            padding: 0;
+            border: 0;
+            background: none;
+            color: inherit;
+            font: inherit;
+            text-align: center;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            animation: artIn .5s cubic-bezier(.2,.75,.25,1) both;
+            animation-delay: calc(var(--i, 0) * 45ms);
+            transition: transform .18s ease, filter .18s ease;
+        }
+        .art-card:nth-child(odd):hover  { transform: translateY(-5px) rotate(-.7deg) scale(1.03); }
+        .art-card:nth-child(even):hover { transform: translateY(-5px) rotate(.7deg) scale(1.03); }
+        .art-card:active { transform: scale(.97); }
+        .art-card:focus-visible { outline: 3px solid #fff; outline-offset: 5px; border-radius: 16px; }
+
+        .art-frame {
+            position: relative;
+            display: block;
+            aspect-ratio: 4 / 3;
+            overflow: hidden;
+            border: 5px solid #6d0f12;
+            border-radius: 14px;
+            background: linear-gradient(180deg, #0c3a2b, #05171a);
+            box-shadow:
+                0 0 0 3px #f5b72d,
+                0 10px 22px rgba(0,0,0,.45),
+                inset 0 0 14px rgba(0,0,0,.45);
+            transition: box-shadow .18s ease;
+        }
+        .art-card:hover .art-frame,
+        .art-card:focus-visible .art-frame {
+            box-shadow:
+                0 0 0 3px #ffe55e,
+                0 14px 28px rgba(0,0,0,.5),
+                0 0 24px rgba(255,226,105,.5),
+                inset 0 0 14px rgba(0,0,0,.4);
+        }
+        .art-frame img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            -webkit-user-drag: none;
+            user-select: none;
+            transition: transform .35s ease, opacity .35s ease;
+            opacity: 0;
+        }
+        .art-frame img.loaded { opacity: 1; }
+        .art-card:hover .art-frame img { transform: scale(1.07); }
+        .art-frame::after {            /* brilho no canto, como um verniz de moldura */
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: linear-gradient(135deg, rgba(255,255,255,.22), transparent 32%);
+        }
+        .art-frame.broken::before {
+            content: "✦";
+            position: absolute;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            color: rgba(255,226,105,.55);
+            font-size: 34px;
+        }
+        .art-title {
+            display: block;
+            padding: 0 2px;
+            color: #ffe55e;
+            font-size: clamp(10px, 1.55vh, 13px);
+            font-weight: 900;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            text-shadow: 0 2px 0 #3a0809, 0 3px 8px rgba(0,0,0,.6);
+        }
+
+        @keyframes artIn {
+            from { opacity: 0; transform: translateY(16px) scale(.96); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* Visualização ampliada */
+        #art-lightbox {
+            position: absolute;
+            inset: 0;
+            z-index: 6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: clamp(6px, 2vw, 22px);
+            padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+            box-sizing: border-box;
+            background: radial-gradient(ellipse at 50% 40%, rgba(10,70,48,.92), rgba(2,14,14,.97));
+            touch-action: pan-y;
+            animation: lbIn .22s ease both;
+        }
+        #art-lightbox[hidden] { display: none !important; }
+        @keyframes lbIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .lb-figure {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+        .lb-figure img {
+            display: block;
+            max-width: min(78vw, 980px);
+            max-height: calc(100dvh - 96px);
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border: 6px solid #6d0f12;
+            border-radius: 16px;
+            background: #05171a;
+            box-shadow: 0 0 0 4px #f5b72d, 0 18px 44px rgba(0,0,0,.6), 0 0 36px rgba(255,226,105,.22);
+            -webkit-user-drag: none;
+            user-select: none;
+        }
+        .lb-figure figcaption {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            color: #ffe55e;
+            font-weight: 900;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            text-shadow: 0 2px 0 #3a0809, 0 3px 8px rgba(0,0,0,.6);
+            font-size: clamp(11px, 1.9vh, 15px);
+        }
+        .lb-figure figcaption span { color: rgba(236,255,240,.65); font-size: .78em; letter-spacing: .14em; }
+
+        .lb-nav, .lb-close {
+            flex: 0 0 auto;
+            display: grid;
+            place-items: center;
+            border: 2px solid #f5b72d;
+            color: #fff4a5;
+            background: linear-gradient(180deg, #3a9a62, #1f7048 72%, #155238);
+            box-shadow: 0 4px 0 #6d0f12, 0 8px 18px rgba(0,0,0,.35);
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            font-weight: 900;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            transition: transform .13s ease, filter .13s ease;
+        }
+        .lb-nav { width: clamp(38px, 6vh, 50px); height: clamp(38px, 6vh, 50px); border-radius: 50%; font-size: 26px; line-height: 1; padding-bottom: 4px; }
+        .lb-close { position: absolute; top: max(10px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); width: 40px; height: 40px; border-radius: 50%; font-size: 17px; }
+        .lb-nav:hover, .lb-close:hover { filter: brightness(1.15); transform: translateY(-2px); }
+        .lb-nav:active, .lb-close:active { transform: translateY(2px); }
+        .lb-nav:focus-visible, .lb-close:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+
+        @media (max-height: 560px) and (orientation: landscape) {
+            .menu-actions { flex-direction: row; gap: 12px; }
+            #gallery-btn { min-height: 42px; min-width: 200px; padding: 0 18px; }
+            #menu-view-gallery { padding-top: 26px; gap: 2px; }
+            .gallery-count { display: none; }
+            .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 12px 10px; }
+            .art-frame { border-width: 4px; border-radius: 11px; }
+            .lb-figure img { max-height: calc(100dvh - 70px); border-width: 5px; }
         }
 
         /* Escolhas exibidas ao concluir uma fase. */
@@ -729,12 +1114,25 @@
         @media (max-height: 560px) and (orientation: landscape) {
             #main-menu { padding-top: 8px; padding-bottom: 20px; }
             .menu-shell { gap: 6px; }
-            .menu-logo-wrap { height: 22vh; min-height: 64px; }
+            /* Logo ocupa só o espaço que sobra acima dos botões (nunca os cobre). */
+            #menu-view-title { height: 100%; justify-content: center; gap: 10px; }
+            #menu-view-title .menu-logo-wrap { flex: 1 1 0; height: auto; min-height: 0; max-height: 62%; width: min(56vw, 520px); }
             .menu-tagline { font-size: 12px; }
             .menu-level-chip { padding: 5px 10px; }
             .menu-level-chip b { width: 21px; height: 21px; }
             #start-game-btn { min-height: 42px; min-width: 200px; }
             .menu-controls { margin-top: 0; }
+        }
+
+        @media (max-height: 400px) and (orientation: landscape) {
+            #main-menu { padding-top: 6px; padding-bottom: 8px; }
+            #menu-view-title { gap: 6px; }
+            #menu-view-title .menu-logo-wrap { max-height: 56%; }
+            .menu-actions { gap: 10px; }
+            #start-game-btn, #gallery-btn { min-height: 36px; min-width: 0; padding: 0 16px; gap: 9px; font-size: 12px; letter-spacing: .1em; border-radius: 13px; box-shadow: 0 4px 0 #b76c24, 0 8px 16px rgba(0,0,0,.28), inset 0 2px 0 rgba(255,255,255,.7); }
+            #gallery-btn { box-shadow: 0 4px 0 #6d0f12, 0 8px 16px rgba(0,0,0,.28), inset 0 2px 0 rgba(255,255,255,.28); }
+            #start-game-btn .play-icon, #gallery-btn .gallery-icon { width: 22px; height: 22px; font-size: 12px; }
+            .menu-footer { display: none; }
         }
 
         @media screen and (orientation: portrait) {
@@ -759,10 +1157,16 @@
                 <img id="menu-logo" alt="Rayman Jungle Run" draggable="false">
                 <h1 id="menu-wordmark" hidden>RAYMAN<span>JUNGLE RUN</span></h1>
             </div>
-            <button id="start-game-btn" type="button">
-                <span class="play-icon" aria-hidden="true">▶</span>
-                <span>JOGAR AGORA</span>
-            </button>
+            <div class="menu-actions">
+                <button id="start-game-btn" type="button">
+                    <span class="play-icon" aria-hidden="true">▶</span>
+                    <span>JOGAR AGORA</span>
+                </button>
+                <button id="gallery-btn" type="button">
+                    <span class="gallery-icon" aria-hidden="true">🖼</span>
+                    <span>GALERIA DE ARTE</span>
+                </button>
+            </div>
         </div>
 
         <!-- 2) Seleção de mundo: emblema jogável + versões escurecidas (em desenvolvimento) -->
@@ -784,11 +1188,11 @@
                     <div class="world-fallback"></div>
                     <span class="world-caption">JUMP</span>
                 </button>
-                <div class="world-emblem locked" aria-hidden="true">
-                    <img class="world-img" alt="" draggable="false">
+                <button id="world-punch-btn" class="world-emblem main" type="button" aria-label="Abrir o mundo Punch">
+                    <img class="world-img" data-emblem="Punch" alt="Punch" draggable="false">
                     <div class="world-fallback"></div>
-                    <span class="world-caption">EM DESENVOLVIMENTO</span>
-                </div>
+                    <span class="world-caption">PUNCH</span>
+                </button>
                 <div class="world-emblem locked far" aria-hidden="true">
                     <img class="world-img" alt="" draggable="false">
                     <div class="world-fallback"></div>
@@ -800,18 +1204,60 @@
         <!-- 3) Seleção de fase do mundo Jump -->
         <div class="menu-shell" id="menu-view-levels" hidden>
             <div class="menu-eyebrow">Jump &bull; Escolha a fase</div>
-            <div class="level-cards">
-                <button id="level-1-btn" class="level-card" type="button">
-                    <span class="level-num">1</span>
-                    <span class="level-name">O DESPERTAR</span>
-                    <span class="level-sub">Tutorial</span>
-                </button>
-                <div class="level-card locked" aria-disabled="true">
-                    <span class="level-num">2</span>
-                    <span class="level-name">A GRANDE TRAVESSIA</span>
-                    <span class="level-sub">EM DESENVOLVIMENTO</span>
+            <div class="world-emblem levels-emblem" aria-hidden="true">
+                <img class="world-img" alt="" draggable="false">
+                <div class="world-fallback"></div>
+                <span class="world-caption">JUMP</span>
+            </div>
+            <div class="level-track">
+                <div class="level-node-wrap">
+                    <button id="level-1-btn" class="level-node" type="button" aria-label="Fase 1: O Despertar">1</button>
+                    <span class="level-node-name">O DESPERTAR</span>
+                    <span class="level-node-sub">Tutorial</span>
+                </div>
+                <div class="level-node-wrap is-locked">
+                    <div class="level-node locked" aria-disabled="true">2</div>
+                    <span class="level-node-name">A GRANDE TRAVESSIA</span>
+                    <span class="level-node-sub">EM DESENVOLVIMENTO</span>
                 </div>
             </div>
+        </div>
+
+        <!-- 3b) Seleção de fase do mundo Punch -->
+        <div class="menu-shell" id="menu-view-levels-punch" hidden>
+            <div class="menu-eyebrow">Punch &bull; Escolha a fase</div>
+            <div class="world-emblem levels-emblem" aria-hidden="true">
+                <img class="world-img" data-emblem="Punch" alt="" draggable="false">
+                <div class="world-fallback"></div>
+                <span class="world-caption">PUNCH</span>
+            </div>
+            <div class="level-track single" id="punch-level-track">
+                <div class="level-node-wrap">
+                    <button id="punch-level-1-btn" class="level-node" type="button" aria-label="Fase 1: Primeiro Soco">1</button>
+                    <span class="level-node-name">PRIMEIRO SOCO</span>
+                    <span class="level-node-sub">Tutorial</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4) Galeria de arte -->
+        <div class="menu-shell" id="menu-view-gallery" hidden>
+            <div class="menu-eyebrow">Galeria de Arte</div>
+            <p class="gallery-count" id="gallery-count"></p>
+            <div class="gallery-scroll" id="gallery-scroll">
+                <div class="gallery-grid" id="gallery-grid"></div>
+            </div>
+        </div>
+
+        <!-- Visualização ampliada da arte -->
+        <div id="art-lightbox" role="dialog" aria-modal="true" aria-label="Arte ampliada" hidden>
+            <button id="lb-close" class="lb-close" type="button" aria-label="Fechar">✕</button>
+            <button id="lb-prev" class="lb-nav" type="button" aria-label="Arte anterior">‹</button>
+            <figure class="lb-figure">
+                <img id="lb-img" alt="" draggable="false">
+                <figcaption><b id="lb-title"></b><span id="lb-pos"></span></figcaption>
+            </figure>
+            <button id="lb-next" class="lb-nav" type="button" aria-label="Próxima arte">›</button>
         </div>
     </main>
 
@@ -877,6 +1323,10 @@
         // Mantenha o arquivo em Sprites/backgrounds/background1.jpg
         const backgroundImage = new Image();
         backgroundImage.src = 'Sprites/backgrounds/background1.jpg';
+
+        // Fundo das fases do mundo Punch (mesmo da tela inicial e das seleções).
+        const backgroundImagePunch = new Image();
+        backgroundImagePunch.src = 'Sprites/backgrounds/background2.png';
 
         // Imagens das novas plataformas.
         // O carregador tenta extensões e pastas comuns do projeto.
@@ -944,14 +1394,14 @@
 
         raymanJumpVoices.forEach(sound => {
             sound.preload = 'auto';
-            sound.volume = 0.20;
+            sound.volume = 0.14;
         });
 
         // Som reproduzido quando o jogador vence.
         const raymanVictorySound =
             new Audio('sounds/rayman_sounds/rayVictory.wav');
         raymanVictorySound.preload = 'auto';
-        raymanVictorySound.volume = 0.95;
+        raymanVictorySound.volume = 0.30;
 
         let lastJumpVoiceAt = -Infinity;
 
@@ -971,13 +1421,13 @@
             ];
 
             const sound = original.cloneNode();
-            sound.volume = 0.20;
+            sound.volume = 0.14;
             sound.play().catch(() => {});
         }
 
         function playRaymanVictorySound() {
             const sound = raymanVictorySound.cloneNode();
-            sound.volume = 0.95;
+            sound.volume = 0.30;
             sound.play().catch(() => {});
         }
 
@@ -1538,6 +1988,8 @@
         }
 
         function triggerPunch() {
+            // Ataque de soco é só no chão: encerra qualquer chute residual.
+            akick.active = false;
             if (!punch.active) {
                 beginPunch();
             } else {
@@ -1554,6 +2006,14 @@
             }
 
             if (!punch.active) return;
+
+            // No ar (ou durante o chute) o soco é cancelado na hora:
+            // só o pé ataca, os punhos não podem aparecer.
+            if (!p.grounded || akick.active) {
+                punch.active = false;
+                punch.queued = false;
+                return;
+            }
 
             punch.t += dt;
 
@@ -1582,7 +2042,7 @@
         const HIP_Y = 60;
 
         function punchPose(part) {
-            if (!punch.active) return null;
+            if (!punch.active || akick.active || !p.grounded) return null;
 
             const s = punchState(punch.t / PUNCH_DUR);
             const e = s.e, h = s.h;
@@ -1643,6 +2103,184 @@
             }
 
             return null;
+        }
+
+
+        // ==================================================================
+        // CHUTE NO AR (botão de ataque enquanto está pulando)
+        // Mãos fechadas para trás do corpo, tronco inclina para trás e o pé
+        // da frente é lançado. Cooldown de 2s só para o ataque aéreo.
+        // ==================================================================
+
+        const KICK_DUR = 0.56;
+        const KICK_COOLDOWN = 0; // sem espera: só não dá pra chutar de novo enquanto o chute está ativo
+
+        const akick = { active: false, t: 0, cd: 0 };
+
+        function kickState(u) {
+            // 1) Preparação: mãos vão para trás, joelho sobe
+            if (u < 0.28) {
+                return { w: easeOutCubic(u / 0.28), e: 0 };
+            }
+            // 2) Disparo: perna estica rápido
+            if (u < 0.42) {
+                return { w: 1, e: easeOutCubic((u - 0.28) / 0.14) };
+            }
+            // 3) Impacto: segura
+            if (u < 0.68) {
+                return { w: 1, e: 1 };
+            }
+            // 4) Recuperação
+            const k = easeInOut((u - 0.68) / 0.32);
+            return { w: 1 - k, e: 1 - k };
+        }
+
+        function triggerAirKick() {
+            if (akick.active || akick.cd > 0) return false;
+            akick.active = true;
+            akick.t = 0;
+            akick.cd = KICK_COOLDOWN;
+            // Corta qualquer soco em andamento/enfileirado.
+            punch.active = false;
+            punch.queued = false;
+            return true;
+        }
+
+        function updateAirKick(dt) {
+            if (akick.cd > 0) akick.cd = Math.max(0, akick.cd - dt);
+
+            if (state !== 'play') {
+                akick.active = false;
+                return;
+            }
+            if (!akick.active) return;
+
+            // Se pousar no meio do chute, termina rápido (a pose some suave).
+            akick.t += p.grounded ? dt * 3 : dt;
+            if (akick.t >= KICK_DUR) akick.active = false;
+        }
+
+        // Aplica a pose do chute por cima da pose de pulo.
+        function kickPose(part, a, K) {
+            if (!akick.active) return a;
+
+            const st = kickState(akick.t / KICK_DUR);
+            const w = st.w * clamp(K.a * 1.25, 0, 1);
+            const e = st.e;
+            if (w < 0.001) return a;
+
+            let x = a.x, y = a.y, r = a.r || 0;
+            const fl = Math.sin(K.t * 26);
+
+            switch (part.id) {
+                case 'front_foot': {
+                    // Joelho sobe (tuck) -> perna lançada com a sola para frente
+                    const tx = mix(18, 128, e), ty = mix(-92, -104, e), tr = mix(0.65, -1.05, e);
+                    x = mix(x, tx, w); y = mix(y, ty, w); r = mix(r, tr, w);
+                    break;
+                }
+                case 'back_foot': {
+                    const k = w * (0.45 + 0.55 * e);
+                    x = mix(x, -58, k); y = mix(y, -22, k); r = mix(r, 0.8, k);
+                    break;
+                }
+                case 'right_hand': {
+                    const k = smooth(w);
+                    x = mix(x, -195 - e * 12 + fl * 2, k);
+                    y = mix(y, 6 + e * 8, k);
+                    r = mix(r, 0.7, k);
+                    break;
+                }
+                case 'left_hand': {
+                    const k = smooth(w);
+                    x = mix(x, -50 - e * 10 - fl * 2, k);
+                    y = mix(y, 34 + e * 8, k);
+                    r = mix(r, 0.55, k);
+                    break;
+                }
+                default:
+                    if (PUNCH_BODY_IDS.includes(part.id)) {
+                        // Tronco joga para trás para equilibrar o chute
+                        const H = w * -0.08 + e * -0.24;
+                        const l = lean(part.y, H);
+                        x += l.x; y += l.y; r += H;
+                        if (HEAD_IDS.includes(part.id)) r += -e * 0.06;
+                        if (part.id === 'hair' || part.id === 'hair_back') {
+                            y -= e * 10;
+                            r += -e * 0.18;
+                        }
+                    }
+            }
+
+            return { x, y, r };
+        }
+
+        // Rastro em arco + onda de impacto do chute.
+        function drawKickFx(K, cx, cy) {
+            if (!akick.active) return;
+
+            const u = akick.t / KICK_DUR;
+            let ta = 0;
+            if (u >= 0.24 && u < 0.42) ta = (u - 0.24) / 0.18;
+            else if (u >= 0.42 && u < 0.7) ta = 1 - (u - 0.42) / 0.28;
+            ta *= clamp(K.a * 1.25, 0, 1);
+            if (ta <= 0) return;
+
+            const fp = raymanParts.find(q => q.id === 'front_foot');
+            const a = kickPose(fp, applyAir(fp, fp.anim(K), K), K);
+
+            const ex = cx + (fp.x + a.x) * CHAR_S;
+            const ey = cy + (fp.y + a.y) * CHAR_S;
+
+            // Arco: do joelho recolhido (embaixo) até a ponta do pé (frente)
+            const sx = cx + 14 * CHAR_S, sy = cy + 170 * CHAR_S;
+            const dx = ex - sx, dy = ey - sy;
+            const len = Math.hypot(dx, dy) || 1;
+            const nx = -dy / len, ny = dx / len;
+            const bow = len * 0.38, w = 11;
+
+            const mx = (sx + ex) / 2 + nx * bow;
+            const my = (sy + ey) / 2 + ny * bow;
+
+            ctx.save();
+
+            const g = ctx.createLinearGradient(sx, sy, ex, ey);
+            g.addColorStop(0, 'rgba(255,255,255,0)');
+            g.addColorStop(0.6, 'rgba(255,240,200,' + (0.35 * ta) + ')');
+            g.addColorStop(1, 'rgba(255,255,255,' + (0.85 * ta) + ')');
+
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.quadraticCurveTo(mx + nx * w * 0.5, my + ny * w * 0.5, ex, ey);
+            ctx.quadraticCurveTo(mx - nx * w * 0.5, my - ny * w * 0.5, sx, sy);
+            ctx.closePath();
+            ctx.fill();
+
+            // Onda de impacto na ponta do pé
+            if (u > 0.40 && u < 0.66) {
+                const rk = clamp((u - 0.40) / 0.26, 0, 1);
+                const rad = 4 + 18 * easeOutCubic(rk);
+                const al = 0.9 * (1 - rk);
+                const ix = ex + 6, iy = ey;
+
+                ctx.strokeStyle = 'rgba(255,255,255,' + al + ')';
+                ctx.lineCap = 'round';
+                ctx.lineWidth = 2.2 * (1 - rk) + 0.4;
+                ctx.beginPath();
+                ctx.arc(ix, iy, rad, 0, Math.PI * 2);
+                ctx.stroke();
+
+                for (let i = 0; i < 6; i++) {
+                    const ang = -1.1 + i * 0.44;
+                    ctx.beginPath();
+                    ctx.moveTo(ix + Math.cos(ang) * rad * 0.7, iy + Math.sin(ang) * rad * 0.7);
+                    ctx.lineTo(ix + Math.cos(ang) * rad * 1.4, iy + Math.sin(ang) * rad * 1.4);
+                    ctx.stroke();
+                }
+            }
+
+            ctx.restore();
         }
 
         // ==================================================================
@@ -1743,10 +2381,12 @@
         let finish = null;
         let levelLumCount = 0;
         let currentLevel = 1;
+        let currentWorld = 'jump'; // 'jump' (só pulo) | 'punch' (pulo + soco)
         const decor = [];
 
-        function buildLevel(level) {
+        function buildLevel(level, world = currentWorld) {
             currentLevel = level;
+            currentWorld = world;
             plats.length = 0;
             spikes.length = 0;
             lums.length = 0;
@@ -1755,9 +2395,67 @@
             lx = -600;
             ly = 270;
 
-            if (level === 1) {
-                // FASE 1 — O DESPERTAR (tutorial interativo com slow motion):
-                // 1º obstáculo = vala (tutorial de pulo), 2º = Psychlops (tutorial de ataque).
+            if (world === 'punch') {
+                // PUNCH 1 — PRIMEIRO SOCO (fase original):
+                // tutorial de soco no 1º Psychlops, depois combos de inimigos e duas valas.
+                ground(1500); // de x=-600 até x=900
+                lumLine(60, ly - 34, 4, 30);
+                lumLine(210, ly - 32, 4, 27);
+
+                // 1º Psychlops (tutorial do soco)
+                lumArc(450, ly - 22, 6, 18, 74);
+                spike(480, 34, ly);
+                checkpoint(575, ly);
+                lumLine(615, ly - 32, 5, 25);
+
+                // 2º Psychlops
+                lumArc(710, ly - 22, 6, 18, 76);
+                spike(740, 36, ly);
+
+                // Primeira vala (usa o pulo)
+                lumArc(810, ly - 28, 7, 20, 84);
+                gap(90);
+
+                // Área de combos
+                {
+                    const g = ground(900);
+                    checkpoint(g.x + 30, ly);
+                    lumLine(g.x + 60, ly - 32, 4, 26);
+
+                    lumArc(g.x + 205, ly - 22, 6, 18, 74);
+                    spike(g.x + 235, 36, ly);
+
+                    lumArc(g.x + 365, ly - 22, 6, 18, 78);
+                    spike(g.x + 395, 38, ly);
+
+                    lumLine(g.x + 480, ly - 32, 4, 25);
+
+                    lumArc(g.x + 590, ly - 22, 7, 17, 82);
+                    spike(g.x + 620, 44, ly);
+
+                    lumLine(g.x + 700, ly - 32, 4, 25);
+
+                    // Segunda vala
+                    lumArc(g.x + 810, ly - 28, 7, 20, 84);
+                    gap(95);
+                }
+
+                // Corredor final: quatro Psychlops e a placa de saída
+                {
+                    const g = ground(1100);
+                    checkpoint(g.x + 24, ly);
+                    lumLine(g.x + 40, ly - 32, 5, 25);
+                    [150, 330, 500, 680].forEach((o, i) => {
+                        spike(g.x + o, [34, 40, 36, 46][i], ly);
+                        lumArc(g.x + o - 30, ly - 22, 6, 18, 74 + i * 4);
+                    });
+                    lumLine(g.x + 590, ly - 32, 4, 25);
+                    lumLine(g.x + 780, ly - 32, 5, 25);
+                    finish = { x: g.x + 950, y: ly };
+                }
+            } else if (level === 1) {
+                // JUMP 1 — O DESPERTAR (tutorial interativo só do pulo, com slow motion):
+                // a 1ª vala é o tutorial de pulo; não há inimigos nem soco no mundo Jump.
                 ground(1120); // de x=-600 até x=520; começo seguro para aquecer
                 lumLine(70, ly - 34, 4, 30);
                 lumLine(230, ly - 32, 4, 27);
@@ -1769,12 +2467,15 @@
                 const g = ground(680, -12);
                 lumLine(g.x + 38, ly - 30, 4, 26);
 
-                // Primeiro Psychlops (tutorial de ataque), bem depois da vala.
-                lumArc(g.x + 220, ly - 20, 6, 19, 74);
-                spike(g.x + 250, 34, ly);
-                checkpoint(g.x + 345, ly);
-                lumLine(g.x + 400, ly - 30, 5, 27);
-                finish = { x: g.x + 590, y: ly };
+                lumLine(g.x + 210, ly - 30, 4, 26);
+                checkpoint(g.x + 330, ly);
+
+                // Segunda vala, para praticar o pulo.
+                lumArc(g.x + 590, ly - 28, 7, 20, 84);
+                gap(90);
+                const g2 = ground(560);
+                lumLine(g2.x + 60, ly - 30, 5, 27);
+                finish = { x: g2.x + 420, y: ly };
             } else {
                 // FASE 2 — PARKOUR: ilhas escalonadas e saltos com altura variável.
                 ground(1000); // fim em x=400
@@ -1927,6 +2628,9 @@
                 }
             }
 
+            // O mundo Jump não tem soco: sem inimigos nas fases de pulo.
+            if (world === 'jump') spikes.length = 0;
+
             levelLumCount = lums.length;
 
             // Decoração do chão recalculada para a fase atual.
@@ -1998,6 +2702,10 @@
 
             coyoteT = 0;
             jumpBuf = 0;
+            akick.active = false;
+            akick.cd = 0;
+            punch.active = false;
+            punch.queued = false;
             airBlend = 0;
             airT = 0;
             landSq = 0;
@@ -2006,9 +2714,9 @@
             runBlend = Math.max(runBlend, 0.6);
         }
 
-        function startGame(level = 1) {
+        function startGame(level = 1, world = 'jump') {
             // Recarrega a fase escolhida para que uma nova entrada sempre comece do início.
-            buildLevel(level);
+            buildLevel(level, world);
             resetRun();
             placePlayer();
 
@@ -2082,12 +2790,12 @@
         playTitleScreenMusic();
         document.getElementById('main-menu').addEventListener('pointerdown', playTitleScreenMusic);
 
-        function launchFromMenu(level = 1) {
+        function launchFromMenu(level = 1, world = 'jump') {
             if (state !== 'title') return;
             const menu = document.getElementById('main-menu');
             if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
             menu.classList.add('menu-leaving');
-            startGame(level);
+            startGame(level, world);
             window.setTimeout(() => {
                 menu.hidden = true;
                 menu.classList.remove('menu-leaving');
@@ -2099,18 +2807,19 @@
         // Tenta várias extensões; se nenhuma existir, usa uma moldura desenhada em CSS.
         (function setupWorldEmblems() {
             const exts = ['png', 'webp', 'jpg', 'jpeg'];
-            document.querySelectorAll('#menu-view-worlds .world-img').forEach((img) => {
+            document.querySelectorAll('#main-menu .world-img').forEach((img) => {
                 const holder = img.closest('.world-emblem');
+                const base = 'Sprites/extras/' + (img.dataset.emblem || 'Jump') + '.';
                 let i = 0;
                 img.addEventListener('error', () => {
                     i++;
                     if (i < exts.length) {
-                        img.src = 'Sprites/extras/Jump.' + exts[i];
+                        img.src = base + exts[i];
                     } else {
                         holder.classList.add('no-img');
                     }
                 });
-                img.src = 'Sprites/extras/Jump.' + exts[0];
+                img.src = base + exts[0];
             });
         })();
 
@@ -2119,7 +2828,9 @@
         const menuViews = {
             title:  document.getElementById('menu-view-title'),
             worlds: document.getElementById('menu-view-worlds'),
-            levels: document.getElementById('menu-view-levels')
+            levels: document.getElementById('menu-view-levels'),
+            levelsPunch: document.getElementById('menu-view-levels-punch'),
+            gallery: document.getElementById('menu-view-gallery')
         };
         const menuBackBtn = document.getElementById('menu-back-btn');
 
@@ -2132,11 +2843,123 @@
             const focusEl = {
                 title: 'start-game-btn',
                 worlds: 'world-jump-btn',
-                levels: 'level-1-btn'
+                levels: 'level-1-btn',
+                levelsPunch: 'punch-level-1-btn',
+                gallery: null
             }[name];
-            const el = document.getElementById(focusEl);
+            if (name === 'gallery') buildGallery();
+            const el = focusEl ? document.getElementById(focusEl)
+                : (name === 'gallery' ? document.querySelector('#gallery-grid .art-card') : menuBackBtn);
             if (el) el.focus({ preventScroll: true });
+            if (name !== 'gallery') closeLightbox();
         }
+
+        // ---------------- Galeria de arte ----------------
+        const ART_GALLERY = [
+            ['rayman', 'Rayman'],
+            ['raymanSurf', 'Rayman no Surf'],
+            ['raymanGlobox1', 'Rayman e Globox I'],
+            ['raymanGlobox2', 'Rayman e Globox II'],
+            ['raymanGloboxTeensies', 'Rayman, Globox e os Teensies'],
+            ['betilla', 'Betilla'],
+            ['gothTeensie', 'Teensie Gótico'],
+            ['hunter', 'O Caçador'],
+            ['rayman-hit-livingstone', 'Rayman acerta Livingstone'],
+            ['livingstone-hit-lum', 'Livingstone ataca o Lum'],
+            ['livingstone-torture-lum', 'Livingstone tortura o Lum'],
+            ['darktoon', 'Darktoon'],
+            ['psychlops', 'Psychlops'],
+            ['pirateShip', 'Navio Pirata'],
+            ['bigMama', 'Big Mama'],
+            ['bossBirds', 'Chefe: Pássaros'],
+            ['bossPlant', 'Chefe: Planta'],
+            ['voodooMama1', 'Voodoo Mama I'],
+            ['voodooMama2', 'Voodoo Mama II'],
+            ['voodooMamaRayman1', 'Voodoo Mama e Rayman I'],
+            ['voodooMamaRayman2', 'Voodoo Mama e Rayman II']
+        ].map(([file, title]) => ({ src: 'artGallery/' + file + '.jpg', title }));
+
+        let galleryBuilt = false;
+        function buildGallery() {
+            if (galleryBuilt) return;
+            galleryBuilt = true;
+            const grid = document.getElementById('gallery-grid');
+            document.getElementById('gallery-count').textContent = ART_GALLERY.length + ' ilustrações';
+            ART_GALLERY.forEach((art, i) => {
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.className = 'art-card';
+                card.style.setProperty('--i', Math.min(i, 14));
+                card.setAttribute('aria-label', 'Ampliar: ' + art.title);
+
+                const frame = document.createElement('span');
+                frame.className = 'art-frame';
+                const img = document.createElement('img');
+                img.loading = 'lazy';
+                img.decoding = 'async';
+                img.alt = art.title;
+                img.draggable = false;
+                img.addEventListener('load', () => img.classList.add('loaded'));
+                img.addEventListener('error', () => frame.classList.add('broken'));
+                img.src = art.src;
+                frame.appendChild(img);
+
+                const label = document.createElement('span');
+                label.className = 'art-title';
+                label.textContent = art.title;
+
+                card.append(frame, label);
+                card.addEventListener('click', () => openLightbox(i));
+                grid.appendChild(card);
+            });
+        }
+
+        const lightbox = document.getElementById('art-lightbox');
+        const lbImg = document.getElementById('lb-img');
+        let lbIndex = 0;
+        let lbReturnFocus = null;
+
+        function lightboxOpen() { return !lightbox.hidden; }
+
+        function showLightboxArt(i) {
+            const n = ART_GALLERY.length;
+            lbIndex = (i + n) % n;
+            const art = ART_GALLERY[lbIndex];
+            lbImg.src = art.src;
+            lbImg.alt = art.title;
+            document.getElementById('lb-title').textContent = art.title;
+            document.getElementById('lb-pos').textContent = (lbIndex + 1) + ' / ' + n;
+        }
+        function openLightbox(i) {
+            lbReturnFocus = document.activeElement;
+            showLightboxArt(i);
+            lightbox.hidden = false;
+            document.getElementById('lb-close').focus({ preventScroll: true });
+        }
+        function closeLightbox() {
+            if (!lightboxOpen()) return;
+            lightbox.hidden = true;
+            lbImg.removeAttribute('src');
+            if (lbReturnFocus && lbReturnFocus.focus) lbReturnFocus.focus({ preventScroll: true });
+        }
+
+        document.getElementById('lb-close').addEventListener('click', closeLightbox);
+        document.getElementById('lb-prev').addEventListener('click', () => showLightboxArt(lbIndex - 1));
+        document.getElementById('lb-next').addEventListener('click', () => showLightboxArt(lbIndex + 1));
+        lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+
+        // Deslizar para os lados troca de arte.
+        (function setupLightboxSwipe() {
+            let sx = null, sy = 0;
+            lightbox.addEventListener('pointerdown', (e) => { sx = e.clientX; sy = e.clientY; });
+            lightbox.addEventListener('pointerup', (e) => {
+                if (sx === null) return;
+                const dx = e.clientX - sx, dy = e.clientY - sy;
+                sx = null;
+                if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4) showLightboxArt(lbIndex + (dx < 0 ? 1 : -1));
+            });
+            lightbox.addEventListener('pointercancel', () => { sx = null; });
+        })();
 
         function exitToLevelMap() {
             if (state !== 'win') return;
@@ -2151,19 +2974,25 @@
             const menu = document.getElementById('main-menu');
             menu.classList.remove('menu-leaving');
             menu.hidden = false;
-            showMenuView('levels');
+            showMenuView(currentWorld === 'punch' ? 'levelsPunch' : 'levels');
             playTitleScreenMusic();
         }
 
         function menuBack() {
-            if (menuView === 'levels') showMenuView('worlds');
+            if (lightboxOpen()) { closeLightbox(); return; }
+            if (menuView === 'gallery') showMenuView('title');
+            else if (menuView === 'levels' || menuView === 'levelsPunch') showMenuView('worlds');
             else if (menuView === 'worlds') showMenuView('title');
         }
 
         function startLevel1FromMenu() {
-            // Única fase liberada no mapa: Fase 1 (tutorial).
-            // Cada nova entrada reinicia a música da fase desde o começo.
-            launchFromMenu(1);
+            // Jump 1: tutorial de pulo. Cada nova entrada reinicia a música da fase.
+            launchFromMenu(1, 'jump');
+        }
+
+        function startPunchLevel1FromMenu() {
+            // Punch 1: tutorial de soco (pulo e soco disponíveis).
+            launchFromMenu(1, 'punch');
         }
 
         document.getElementById('next-level-btn').addEventListener('click', () => {
@@ -2173,12 +3002,27 @@
         document.getElementById('exit-levels-btn').addEventListener('click', exitToLevelMap);
 
         document.getElementById('start-game-btn').addEventListener('click', () => showMenuView('worlds'));
+        document.getElementById('gallery-btn').addEventListener('click', () => showMenuView('gallery'));
         document.getElementById('world-jump-btn').addEventListener('click', () => showMenuView('levels'));
+        document.getElementById('world-punch-btn').addEventListener('click', () => showMenuView('levelsPunch'));
         document.getElementById('level-1-btn').addEventListener('click', startLevel1FromMenu);
+        document.getElementById('punch-level-1-btn').addEventListener('click', startPunchLevel1FromMenu);
         menuBackBtn.addEventListener('click', menuBack);
 
         window.addEventListener('keydown', (e) => {
             if (state !== 'title') return;
+
+            // Galeria ampliada: setas trocam de arte, Esc fecha.
+            if (lightboxOpen()) {
+                if (e.code === 'ArrowLeft') { e.preventDefault(); showLightboxArt(lbIndex - 1); }
+                else if (e.code === 'ArrowRight') { e.preventDefault(); showLightboxArt(lbIndex + 1); }
+                else if (e.code === 'Escape' || e.code === 'Backspace') { e.preventDefault(); closeLightbox(); }
+                else if (['Enter', 'Space'].includes(e.code) && !e.repeat) {
+                    e.preventDefault();
+                    if (e.target && e.target.tagName === 'BUTTON') e.target.click();
+                }
+                return;
+            }
 
             if (e.code === 'Escape' || e.code === 'Backspace') {
                 e.preventDefault();
@@ -2190,9 +3034,16 @@
             if (['Enter', 'Space'].includes(e.code) && !e.repeat) {
                 e.preventDefault();
                 if (e.target === menuBackBtn) menuBack();
+                else if (e.target && e.target.id === 'gallery-btn') showMenuView('gallery');
+                else if (e.target && e.target.closest && e.target.closest('.art-card')) e.target.closest('.art-card').click();
+                else if (menuView === 'gallery') { /* nada: só navega pelos cards */ }
                 else if (menuView === 'title') showMenuView('worlds');
-                else if (menuView === 'worlds') showMenuView('levels');
+                else if (menuView === 'worlds') {
+                    if (e.target && e.target.id === 'world-punch-btn') showMenuView('levelsPunch');
+                    else showMenuView('levels');
+                }
                 else if (menuView === 'levels') startLevel1FromMenu();
+                else if (menuView === 'levelsPunch') startPunchLevel1FromMenu();
             }
         });
 
@@ -2210,7 +3061,9 @@
             camX = 0;
             lastHud = '';
             lastLumCount = -1;
-            playLevelBackgroundMusic(true);
+            // Avançar de fase NÃO reinicia a música: ela segue de onde estava.
+            // (Só reinicia ao sair para o mapa e entrar de novo, via startGame.)
+            playLevelBackgroundMusic(false);
             tutorialStart(level);
         }
 
@@ -2251,7 +3104,11 @@
         };
 
         // stage: 'idle' | 'jump-wait' | 'jump' | 'attack-wait' | 'attack' | 'done'
-        const tutorial = { stage: 'idle', completed: false };
+        //   Jump:  só o tutorial de PULO (o botão de soco nunca aparece).
+        //   Punch: tutorial de SOCO na fase 1; depois pulo e soco ficam disponíveis.
+        const tutorial = { stage: 'idle', jumpDone: false, punchDone: false };
+        const tutDone = () => currentWorld === 'punch' ? tutorial.punchDone : tutorial.jumpDone;
+        const hudMode = () => currentWorld === 'punch' ? 'all' : 'jump-only';
         let timeScale = 1;
         let tutPitX = 0;
 
@@ -2289,14 +3146,19 @@
             timeScale = 1;
             hideTutorialPrompt();
 
-            if (level === 1 && !tutorial.completed) {
-                // A 1ª vala é o fim do primeiro trecho de chão.
-                tutPitX = plats[0].x + plats[0].w;
-                tutorial.stage = 'jump-wait';
-                setTouchButtons('none');   // nenhum botão na tela até a hora certa
+            if (level === 1 && !tutDone()) {
+                if (currentWorld === 'punch') {
+                    tutorial.stage = 'attack-wait';
+                    setTouchButtons('jump-only');   // soco só aparece na hora do tutorial
+                } else {
+                    // A 1ª vala é o fim do primeiro trecho de chão.
+                    tutPitX = plats[0].x + plats[0].w;
+                    tutorial.stage = 'jump-wait';
+                    setTouchButtons('none');   // nenhum botão na tela até a hora certa
+                }
             } else {
                 tutorial.stage = 'done';
-                setTouchButtons('all');
+                setTouchButtons(hudMode());
             }
         }
 
@@ -2304,8 +3166,16 @@
         function tutorialReset() {
             if (tutorial.stage === 'idle' || tutorial.stage === 'done') return;
             hideTutorialPrompt();
-            tutorial.stage = tutorial.completed ? 'done' : 'jump-wait';
-            setTouchButtons(tutorial.completed ? 'all' : 'none');
+            if (tutDone()) {
+                tutorial.stage = 'done';
+                setTouchButtons(hudMode());
+            } else if (currentWorld === 'punch') {
+                tutorial.stage = 'attack-wait';
+                setTouchButtons('jump-only');
+            } else {
+                tutorial.stage = 'jump-wait';
+                setTouchButtons('none');
+            }
         }
 
         function startJumpTutorial() {
@@ -2323,16 +3193,15 @@
         // Chamado quando o pulo é de fato executado (stepPhysics).
         function onTutorialJump() {
             if (tutorial.stage !== 'jump') return;
-            tutorial.stage = 'attack-wait';
-            hideTutorialPrompt();
-            setTouchButtons('jump-only'); // botão de pulo aparece assim que o slow motion do pulo acaba
+            completeTutorial(); // no mundo Jump o tutorial acaba aqui: fica só o botão de pulo
         }
 
         function completeTutorial() {
             tutorial.stage = 'done';
-            tutorial.completed = true;
+            if (currentWorld === 'punch') tutorial.punchDone = true;
+            else tutorial.jumpDone = true;
             hideTutorialPrompt();
-            setTouchButtons('all'); // HUD padrão volta permanentemente
+            setTouchButtons(hudMode()); // Jump: só pulo | Punch: pulo + soco
         }
 
         // Chamado quando o ataque é executado (pressAttack).
@@ -2383,16 +3252,18 @@
         }
 
         // ------------------------------------------------------------------
-        // CONTROLES (mouse/toque e teclado)
+        // CONTROLES (botões na tela e teclado)
         // ------------------------------------------------------------------
 
         // Durante o tutorial da Fase 1, o jogador só pode pular no slow motion do pulo
         // e só pode atacar no slow motion do ataque.
         function canJumpNow() {
-            return tutorial.stage === 'done' || tutorial.stage === 'jump';
+            return tutorial.stage === 'done' || tutorial.stage === 'jump' ||
+                tutorial.stage === 'attack-wait';
         }
 
         function canAttackNow() {
+            if (currentWorld !== 'punch') return false; // mundo Jump: sem soco/chute
             return tutorial.stage === 'done' || tutorial.stage === 'attack';
         }
 
@@ -2414,10 +3285,10 @@
 
         const pointers = new Set();
 
+        // Tocar/clicar na tela NÃO pula mais: o pulo e o ataque só saem pelos
+        // botões na tela (btn-jump / btn-attack) ou pelas teclas.
         canvas.addEventListener('pointerdown', (e) => {
             e.preventDefault();
-            pointers.add(e.pointerId);
-            pressJump();
         });
 
         const pointerEnd = (e) => {
@@ -2460,7 +3331,13 @@
         function pressAttack() {
             if (state !== 'play') return;
             if (!canAttackNow()) return;
-            triggerPunch();
+
+            if (!p.grounded) {
+                // No ar: chute (com cooldown). Em cooldown, não faz nada.
+                if (!triggerAirKick()) return;
+            } else {
+                triggerPunch();
+            }
 
             // Tutorial: o ataque foi executado, slow motion termina e a HUD completa volta.
             onTutorialAttack();
@@ -2485,7 +3362,7 @@
             btn.addEventListener('pointercancel', up);
         }
 
-        // O pulo usa o mesmo controle do toque na tela (segurar = pulo mais alto).
+        // Segurar o botão de pulo = pulo mais alto.
         bindTouchButton('btn-jump', pressJump, true);
         bindTouchButton('btn-attack', pressAttack, false);
 
@@ -2774,12 +3651,18 @@
             const W = canvas.width;
             const H = canvas.height;
 
+            const bgPunchOk = backgroundImagePunch.complete &&
+                backgroundImagePunch.naturalWidth > 0;
+            const bgImg = (currentWorld === 'punch' && bgPunchOk)
+                ? backgroundImagePunch
+                : backgroundImage;
+
             if (
-                backgroundImage.complete &&
-                backgroundImage.naturalWidth > 0
+                bgImg.complete &&
+                bgImg.naturalWidth > 0
             ) {
-                const imgW = backgroundImage.naturalWidth;
-                const imgH = backgroundImage.naturalHeight;
+                const imgW = bgImg.naturalWidth;
+                const imgH = bgImg.naturalHeight;
 
                 const scale = Math.max(W / imgW, H / imgH);
 
@@ -2790,12 +3673,18 @@
                 const drawY = (H - drawH) / 2;
 
                 ctx.drawImage(
-                    backgroundImage,
+                    bgImg,
                     Math.floor(drawX) - 1,
                     Math.floor(drawY) - 1,
                     Math.ceil(drawW) + 2,
                     Math.ceil(drawH) + 2
                 );
+
+                // Fases Punch: escurece um pouco o fundo para não ficar tão claro.
+                if (bgImg === backgroundImagePunch) {
+                    ctx.fillStyle = 'rgba(0, 16, 12, 0.34)';
+                    ctx.fillRect(0, 0, W, H);
+                }
 
                 return;
             }
@@ -3798,7 +4687,7 @@
 
         // Rastro do soco + onda de impacto.
         function drawPunchFx(K, cx, cy) {
-            if (!punch.active) return;
+            if (!punch.active || akick.active || !p.grounded) return;
 
             const u = punch.t / PUNCH_DUR;
 
@@ -3921,9 +4810,11 @@
             const centerY = p.y - FOOT_BOTTOM * CHAR_S;
 
             drawPunchFx(K, centerX, centerY);
+            drawKickFx(K, centerX, centerY);
 
             raymanParts.forEach(part => {
                 let a = applyAir(part, part.anim(K), K);
+                a = kickPose(part, a, K);
 
                 const pp = punchPose(part);
 
@@ -4116,7 +5007,7 @@
                 ctx.fillRect(0, 0, W, H);
 
                 drawText(
-                    currentLevel === 1 ? 'FASE 1 CONCLUÍDA!' : 'JORNADA CONCLUÍDA!',
+                    (currentWorld === 'punch' || currentLevel === 1) ? 'FASE 1 CONCLUÍDA!' : 'JORNADA CONCLUÍDA!',
                     W / 2,
                     H * 0.29,
                     H * 0.085,
@@ -4131,9 +5022,11 @@
                 );
 
                 drawText(
-                    currentLevel === 1
-                        ? 'A selva já conhece o seu nome — a grande travessia começa agora!'
-                        : 'Você dominou as plataformas e os Psychlops!',
+                    currentWorld === 'punch'
+                        ? 'Seus punhos são a lei da selva — os Psychlops que se cuidem!'
+                        : (currentLevel === 1
+                            ? 'A selva já conhece o seu nome — a grande travessia começa agora!'
+                            : 'Você dominou as plataformas da selva!'),
                     W / 2,
                     H * 0.455,
                     H * 0.033,
@@ -4160,15 +5053,23 @@
             }
 
             guideHud.style.display = 'block';
-            if (currentLevel === 1) {
+            if (currentWorld === 'punch') {
+                if (p.x < 300) {
+                    guideHud.textContent = 'Siga a trilha dourada dos Lums. A selva não espera ninguém!';
+                } else if (p.x < 700) {
+                    guideHud.textContent = 'Um Psychlops bloqueia o caminho. Mostre a força do seu punho!';
+                } else {
+                    guideHud.style.display = 'none';
+                }
+            } else if (currentLevel === 1) {
                 if (p.x < 400) {
                     guideHud.textContent = 'Siga a trilha dourada dos Lums. A selva não espera ninguém!';
                 } else if (p.x < 700) {
                     guideHud.textContent = 'O chão desaparece logo adiante. Confie no seu salto!';
                 } else if (p.x < 1000) {
-                    guideHud.textContent = 'Um Psychlops bloqueia o caminho. Mostre a força do seu punho!';
+                    guideHud.textContent = 'Os Lums desenham o caminho do salto. Siga-os!';
                 } else {
-                    guideHud.textContent = 'Você está pegando o jeito! Alcance a placa e mergulhe no parkour.';
+                    guideHud.textContent = 'Última vala! Alcance a placa para concluir a fase.';
                 }
             } else {
                 // Fase 2: sem textos de guia na tela.
@@ -4195,6 +5096,8 @@
 
             // Atualização do jogo
             updatePunch(dt);
+            updateAirKick(dt);
+            btnAttackEl.classList.toggle('cooling', !p.grounded && akick.cd > 0);
 
             const running =
                 !FREEZE_MOVEMENT &&
@@ -4255,12 +5158,18 @@
 
                         const enemy = psyGeom(s);
                         const punchPhase = punch.t / PUNCH_DUR;
-                        const inPunchWindow = punch.active &&
+                        const inPunchWindow = punch.active && p.grounded && !akick.active &&
                             punchPhase >= 0.30 && punchPhase <= 0.82;
                         const closeEnough = Math.abs(enemy.cx - p.x) < 108 &&
                             Math.abs(enemy.cy - (p.y - BODY_H * 0.55)) < 100;
 
-                        if (inPunchWindow && closeEnough) {
+                        const kickPh = akick.t / KICK_DUR;
+                        const inKickWindow = akick.active &&
+                            kickPh >= 0.30 && kickPh <= 0.72;
+                        const kickClose = enemy.cx - p.x > -20 && enemy.cx - p.x < 130 &&
+                            Math.abs(enemy.cy - (p.y - BODY_H * 0.55)) < 90;
+
+                        if ((inPunchWindow && closeEnough) || (inKickWindow && kickClose)) {
                             s.dead = true;
                             continue;
                         }
@@ -4310,6 +5219,7 @@
                 winT += dt;
             }
             winActions.hidden = state !== 'win' || winT <= 0.7;
+            document.getElementById('next-level-btn').hidden = currentWorld === 'punch';
 
             // Passos e animação
             phase +=
@@ -4423,7 +5333,7 @@
                 100
             );
 
-            const txt = 'FASE ' + currentLevel + '/2  •  ' + prog + '%';
+            const txt = 'FASE ' + currentLevel + '/' + (currentWorld === 'punch' ? 1 : 2) + '  •  ' + prog + '%';
 
             if (gotCount !== lastLumCount) {
                 lumCountEl.textContent = gotCount;
