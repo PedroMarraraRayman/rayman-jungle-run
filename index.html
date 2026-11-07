@@ -2957,6 +2957,7 @@
 
             walkBlend = Math.max(walkBlend, 0.6);
             runBlend = Math.max(runBlend, 0.6);
+            ursulaTrailReset();
         }
 
         function startGame(level = 1, world = 'jump') {
@@ -3867,7 +3868,7 @@
             ctx.setTransform(
                 zoom, 0, 0, zoom,
                 -camX * f * zoom,
-                0
+                -camY * zoom
             );
         }
 
@@ -5211,6 +5212,466 @@
             });
         }
 
+
+        // ==================================================================
+        // URSULA (idle) - montada com as partes de Sprites/ursula_sprites
+        //
+        // As posições (tx, ty) estão em "unidades de miniatura" e são
+        // convertidas para pixels reais quando as imagens carregam, usando a
+        // largura real da cabeça (parte_35) como referência. Assim o encaixe
+        // não depende do tamanho exato dos arquivos.
+        // Origem (0,0) = pés da Ursula; y negativo = para cima.
+        // Ordem da lista = ordem de desenho (de trás para frente).
+        //
+        // MODO AJUSTE (URSULA_EDIT = true):
+        //   arrastar = move a peça | roda do mouse = escala | Shift+roda = gira
+        //   N / B = próxima / anterior peça | F H T G = ajuste fino
+        //   R Y = girar | C = girar 180° | V = espelhar | O = ocultar
+        //   [ ] = camada para trás / frente | , . = tamanho geral
+        //   A = liga/desliga animação | P = copia a tabela | Delete = reseta
+        // O ajuste é salvo no navegador automaticamente.
+        // ==================================================================
+
+        let URSULA_S = 0.206;           // escala geral da Ursula
+        const URSULA_H = 88;            // altura da Ursula em tela (px do mundo; Rayman ~70)
+        const URSULA_THUMB_H = 239;     // altura total da Ursula em unidades de miniatura
+        const URSULA_GAP = 80;          // distância mínima atrás do Rayman (px do mundo)
+        const URSULA_DELAY = 0.55;      // atraso (s) com que ela repete o caminho do Rayman
+        let ursulaSimT = 0;             // tempo de simulação (respeita o slow motion)
+        const ursulaTrail = [];         // rastro de posições do Rayman
+
+        function ursulaTrailReset() {
+            ursulaTrail.length = 0;
+            ursulaTrail.push({ t: ursulaSimT - URSULA_DELAY - 0.01, x: p.x - URSULA_GAP, y: p.y });
+            ursulaTrail.push({ t: ursulaSimT, x: p.x, y: p.y });
+        }
+
+        function ursulaTrailPush() {
+            ursulaTrail.push({ t: ursulaSimT, x: p.x, y: p.y });
+            // descarta o que já ficou velho demais (mantém uma amostra anterior ao alvo)
+            const limit = ursulaSimT - URSULA_DELAY - 0.5;
+            while (ursulaTrail.length > 2 && ursulaTrail[1].t < limit) ursulaTrail.shift();
+        }
+
+        function ursulaFollowPos() {
+            if (!ursulaTrail.length) ursulaTrailReset();
+            const target = ursulaSimT - URSULA_DELAY;
+            let a = ursulaTrail[0], b = ursulaTrail[0];
+            for (let i = 0; i < ursulaTrail.length; i++) {
+                if (ursulaTrail[i].t <= target) { a = ursulaTrail[i]; b = ursulaTrail[Math.min(i + 1, ursulaTrail.length - 1)]; }
+                else break;
+            }
+            const f = b.t > a.t ? clamp((target - a.t) / (b.t - a.t), 0, 1) : 0;
+            let x = a.x + (b.x - a.x) * f;
+            let y = a.y + (b.y - a.y) * f;
+
+            // Nunca fica na frente nem em cima do Rayman (ex.: ao parar na chegada).
+            if (x > p.x - URSULA_GAP) {
+                x = p.x - URSULA_GAP;
+                const g = groundBelow(x, p.y - 4);
+                y = g ? g.y : p.y;
+            }
+            return { x, y };
+        }
+        const URSULA_EDIT = false;      // true = modo de ajuste (arrastar peças); false = só a animação idle
+        const URSULA_RIG_KEY = 'ursulaRig_v12'; // v12: posições finais; editor desligado
+        const URSULA_NAMES = {
+            '15': 'tridente', '14': 'antena A (14)', '19': 'antena B (19)',
+            '30': 'olho esquerdo', '24': 'cabelo', '27': 'olho direito', '35': 'cabeça', '08': 'capacete',
+            '02': 'nariz', '20': 'boca', '23': 'tronco', '04': 'braço frente',
+            '17': 'braço fundo', '22': 'braço trás', '18': 'perna'
+        };
+        let ursulaMag = true;           // M = liga/desliga zoom de edição na Ursula
+        let camY = 0;
+        const URSULA_DIR = 'Sprites/ursula_sprites/';
+        const URSULA_THUMB_HEAD_W = 74; // largura da cabeça (35) na miniatura
+
+        // Posições finais (x, y em pixels do sprite; origem = pés da Ursula).
+        // A ordem da lista é a ordem das camadas: o primeiro fica no fundo e o último
+        // fica na frente. Organização, de trás para frente:
+        //   1) braços e perna  ->  2) tronco  ->  3) cabeça, nariz e boca  ->  4) capacete  ->  5) olhos
+        // (a parte 17 fica atrás de todas as outras; o nariz fica atrás do capacete;
+        //  os olhos ficam por cima do capacete para nunca serem escondidos por ele).
+        //
+        // Os olhos (26 e 27) usam tamanho e posição RELATIVOS À CABEÇA (parte 35):
+        //   fit = largura de cada olho, como fração da largura da cabeça (aumente para crescer)
+        //   ex  = deslocamento horizontal do centro do olho, como fração da largura da cabeça
+        //   ey  = deslocamento vertical (positivo = para baixo), como fração da largura da cabeça
+        // Assim eles ficam certos mesmo sem saber o tamanho real dos arquivos .png.
+        const ursulaParts = [
+            // Posições finais ajustadas no editor. Ordem = camadas (primeiro = fundo).
+            // n = número da peça | bob = balanço vertical | sway = balanço de rotação
+
+            { n: '24', x: -120, y: -217, rot:  1.62, s: 1.00, fx: 1, bob: 1.3, sway: 0.03, ph: 0.5 }, // cabelo
+            { n: '15', x: -155, y: -162, rot:  0.78, s: 0.79, fx: 1, bob: 0.8, sway: 0.03, ph: 0.3 }, // tridente
+            { n: '17', x: -141, y: -127, rot:  0.00, s: 1.00, fx: 1, bob: 0.8, sway: 0.04, ph: 0.6 },
+            { n: '22', x: -144, y:  -16, rot: -1.26, s: 1.00, fx: 1, bob: 0.8, sway: 0.03, ph: 0.3 },
+            { n: '18', x: -102, y:  -28, rot:  0.00, s: 1.00, fx: 1, bob: 0,   sway: 0,    ph: 0   },
+            { n: '23', x: -131, y: -146, rot:  2.52, s: 1.00, fx: 1, bob: 1,   sway: 0,    ph: 0   },
+            { n: '04', x: -164, y: -111, rot:  0.00, s: 1.00, fx: 1, bob: 0.6, sway: 0.03, ph: 0.9 },
+            { n: '14', x:  -25, y: -362, rot: -2.54, s: 1.08, fx: 1, bob: 1.3, sway: 0.02, ph: 0.4 }, // antena
+            { n: '19', x: -165, y: -366, rot:  1.04, s: 0.96, fx: 1, bob: 1.3, sway: 0.02, ph: 0.4 }, // antena
+            { n: '35', x:  -95, y: -262, rot: -4.47, s: 0.96, fx: 1, bob: 1.3, sway: 0.01, ph: 0.4 }, // cabeça
+            { n: '02', x:  -79, y: -235, rot:  0.00, s: 1.00, fx: 1, bob: 1.3, sway: 0.01, ph: 0.4 }, // nariz
+            { n: '20', x: -101, y: -223, rot:  3.39, s: 0.72, fx: 1, bob: 1.3, sway: 0.01, ph: 0.4 }, // boca
+            { n: '30', x:  -55, y: -248, rot: -4.86, s: 0.80, fx: 1, bob: 1.3, sway: 0.01, ph: 0.4 }, // olho
+            { n: '27', x:  -99, y: -257, rot:  2.19, s: 0.90, fx: 1, bob: 1.3, sway: 0.01, ph: 0.4 }, // olho
+            { n: '08', x:  -98, y: -298, rot:  3.14, s: 0.89, fx: 1, bob: 1.3, sway: 0.01, ph: 0.4 }  // capacete
+        ];
+
+        let ursulaReady = false;
+        let ursulaSel = 0;
+        let ursulaAnim = !URSULA_EDIT;
+        const ursulaOrg = { x: 0, y: 0 };
+
+        ursulaParts.forEach(part => {
+            part.fx = part.fx || 1;
+            part.img = new Image();
+            part.img.onload = () => { part.loaded = true; part.done = true; };
+            part.img.onerror = () => {
+                part.done = true;
+                console.warn('Imagem não encontrada: ' + part.img.src);
+            };
+            part.img.src = URSULA_DIR + 'parte_' + part.n + '.png';
+        });
+
+        function ursulaSave() {
+            if (!URSULA_EDIT) return;
+            try {
+                const data = {};
+                ursulaParts.forEach(q => {
+                    data[q.n] = { x: q.x, y: q.y, rot: q.rot, s: q.s, fx: q.fx, hide: !!q.hide };
+                });
+                localStorage.setItem(URSULA_RIG_KEY, JSON.stringify({
+                    S: URSULA_S,
+                    order: ursulaParts.map(q => q.n),
+                    data
+                }));
+            } catch (err) { /* sem armazenamento: ignora */ }
+        }
+
+        function ursulaLoadSaved() {
+            if (!URSULA_EDIT) return;
+            try {
+                const raw = localStorage.getItem(URSULA_RIG_KEY);
+                if (!raw) return;
+                const saved = JSON.parse(raw);
+                ursulaParts.forEach(q => {
+                    const d = saved.data && saved.data[q.n];
+                    if (d) Object.assign(q, d);
+                });
+                if (saved.S) URSULA_S = saved.S;
+                if (saved.order) {
+                    ursulaParts.sort((a, b) => saved.order.indexOf(a.n) - saved.order.indexOf(b.n));
+                }
+            } catch (err) { /* ignora */ }
+        }
+
+        function ursulaCheckReady() {
+            if (ursulaReady || !ursulaParts.every(q => q.done)) return;
+
+            const head = ursulaParts.find(q => q.n === '35');
+            const k = head && head.loaded ? head.img.width / URSULA_THUMB_HEAD_W : 1.43;
+
+            ursulaParts.forEach(q => {
+                if (q.tx !== undefined) {
+                    q.x = q.tx * k;
+                    q.y = q.ty * k;
+                }
+            });
+
+            // Só recalcula a escala se ainda houver peças em unidades de miniatura (tx/ty).
+            if (ursulaParts.some(q => q.tx !== undefined)) {
+                URSULA_S = URSULA_H / (URSULA_THUMB_H * k);
+            }
+
+            // Olhos: tamanho e posição calculados a partir da largura real da cabeça (parte 35).
+            if (head && head.loaded) {
+                const headW = head.img.width * head.s;
+
+                ursulaParts.forEach(q => {
+                    if (q.fit === undefined || !q.loaded) return;
+                    q.s = q.fit * headW / q.img.width;
+                    q.x = head.x + q.ex * headW;
+                    q.y = head.y + q.ey * headW;
+                });
+            }
+
+            ursulaLoadSaved();
+            ursulaReady = true;
+        }
+
+        function drawUrsula(K) {
+            ursulaCheckReady();
+            if (!ursulaReady) return;
+
+            worldTransform(1);
+
+            const S = URSULA_S;
+            const fp = ursulaFollowPos();
+            const ux = fp.x;
+            const uy = fp.y;
+
+            ursulaOrg.x = ux;
+            ursulaOrg.y = uy;
+
+            // Sombra no chão abaixo dela (some quando ela está no ar)
+            const gb = groundBelow(ux, uy - 4);
+            if (gb) {
+                const d = clamp((gb.y - uy) / 120, 0, 1);
+                ctx.fillStyle = 'rgba(0,0,0,' + (0.28 * (1 - d * 0.7)) + ')';
+                ctx.beginPath();
+                ctx.ellipse(ux, gb.y + 1, 18 * (1 - d * 0.4), 3.4 * (1 - d * 0.4), 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ursulaParts.forEach((part, i) => {
+                if (!part.loaded || part.hide) return;
+
+                // Respiração (idle)
+                const w = ursulaAnim ? Math.sin(K.t * 2.2 + part.ph) : 0;
+                const dy = w * part.bob * 6;
+                const rot = part.rot + w * part.sway;
+
+                const iw = part.img.width * S * part.s;
+                const ih = part.img.height * S * part.s;
+
+                ctx.save();
+                ctx.translate(ux + part.x * S, uy + (part.y + dy) * S);
+                if (rot) ctx.rotate(rot);
+                if (part.fx < 0) ctx.scale(-1, 1);
+                ctx.drawImage(part.img, -iw / 2, -ih / 2, iw, ih);
+
+                if (URSULA_EDIT && i === ursulaSel) {
+                    ctx.strokeStyle = '#ffe269';
+                    ctx.lineWidth = 0.6;
+                    ctx.strokeRect(-iw / 2, -ih / 2, iw, ih);
+                }
+
+                ctx.restore();
+            });
+
+            if (URSULA_EDIT) ursulaDrawHud();
+        }
+
+        function ursulaDrawHud() {
+            const sel = ursulaParts[ursulaSel];
+            const fs = Math.max(11, Math.min(14, Math.round(canvas.width / 80)));
+            const lines = [
+                'AJUSTE DA URSULA',
+                'arrastar = mover | roda = escala | Shift+roda = girar',
+                'N/B = trocar peça | F H T G = ajuste fino | R Y = girar',
+                'C = 180° | V = espelhar | O = ocultar | [ ] = camada',
+                ', . = tamanho geral | A = animar | P = copiar | Del = resetar',
+                'M = zoom do editor | ' +
+                'parte_' + sel.n + (URSULA_NAMES[sel.n] ? ' [' + URSULA_NAMES[sel.n] + ']' : '') + (sel.hide ? ' (oculta)' : '') +
+                    '  x:' + Math.round(sel.x) + ' y:' + Math.round(sel.y) +
+                    ' rot:' + sel.rot.toFixed(2) + ' s:' + sel.s.toFixed(2) +
+                    ' camada:' + (ursulaSel + 1) + '/' + ursulaParts.length
+            ];
+
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.font = 'bold ' + fs + 'px monospace';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'alphabetic';
+
+            let wMax = 0;
+            lines.forEach(l => { wMax = Math.max(wMax, ctx.measureText(l).width); });
+
+            const x0 = 10;
+            const y0 = 62;
+            const lh = fs + 4;
+
+            ctx.fillStyle = 'rgba(0,0,0,0.62)';
+            ctx.fillRect(x0 - 6, y0 - 4, wMax + 12, lines.length * lh + 6);
+
+            lines.forEach((l, i) => {
+                ctx.fillStyle = i === 0 || i === lines.length - 1 ? '#ffe269' : '#fff';
+                ctx.fillText(l, x0, y0 + fs + i * lh);
+            });
+        }
+
+        if (URSULA_EDIT) {
+            const alphaCache = new Map();
+            let alphaOK = true;
+
+            function ursulaOpaqueAt(part, lx, ly) {
+                if (!alphaOK) return true;
+                try {
+                    let g = alphaCache.get(part);
+                    if (!g) {
+                        const c = document.createElement('canvas');
+                        c.width = part.img.width;
+                        c.height = part.img.height;
+                        g = c.getContext('2d', { willReadFrequently: true });
+                        g.drawImage(part.img, 0, 0);
+                        alphaCache.set(part, g);
+                    }
+                    return g.getImageData(Math.floor(lx), Math.floor(ly), 1, 1).data[3] > 20;
+                } catch (err) {
+                    alphaOK = false; // arquivo local (file://) bloqueia a leitura: usa a caixa
+                    return true;
+                }
+            }
+
+            function ursulaHit(wx, wy) {
+                const S = URSULA_S;
+
+                for (let i = ursulaParts.length - 1; i >= 0; i--) {
+                    const q = ursulaParts[i];
+                    if (!q.loaded || q.hide) continue;
+
+                    const dx = wx - (ursulaOrg.x + q.x * S);
+                    const dy = wy - (ursulaOrg.y + q.y * S);
+                    const c = Math.cos(q.rot);
+                    const s = Math.sin(q.rot);
+
+                    let lx = dx * c + dy * s;
+                    const ly = -dx * s + dy * c;
+                    if (q.fx < 0) lx = -lx;
+
+                    const iw = q.img.width * S * q.s;
+                    const ih = q.img.height * S * q.s;
+
+                    // peças minúsculas (nariz) ganham uma folga para clicar
+                    const padX = Math.max(0, 5 - iw / 2);
+                    const padY = Math.max(0, 5 - ih / 2);
+
+                    if (Math.abs(lx) > iw / 2 + padX || Math.abs(ly) > ih / 2 + padY) continue;
+                    if (padX || padY) return i;
+
+                    if (ursulaOpaqueAt(q, (lx / iw + 0.5) * q.img.width, (ly / ih + 0.5) * q.img.height)) {
+                        return i;
+                    }
+                }
+
+                return -1;
+            }
+
+            const toWorld = (e) => {
+                const r = canvas.getBoundingClientRect();
+                const k = canvas.width / r.width / zoom;
+                return {
+                    x: (e.clientX - r.left) * k + camX,
+                    y: (e.clientY - r.top) * k + camY,
+                    k
+                };
+            };
+
+            let drag = null;
+
+            window.addEventListener('pointerdown', (e) => {
+                if (e.target !== canvas || !ursulaReady) return;
+
+                const w = toWorld(e);
+                const i = ursulaHit(w.x, w.y);
+                if (i < 0) return;
+
+                ursulaSel = i;
+                drag = { id: e.pointerId, x: e.clientX, y: e.clientY };
+                e.stopPropagation();   // não conta como pulo
+                e.preventDefault();
+            }, true);
+
+            window.addEventListener('pointermove', (e) => {
+                if (!drag || e.pointerId !== drag.id) return;
+
+                const k = toWorld(e).k;
+                const sel = ursulaParts[ursulaSel];
+
+                sel.x += (e.clientX - drag.x) * k / URSULA_S;
+                sel.y += (e.clientY - drag.y) * k / URSULA_S;
+                drag.x = e.clientX;
+                drag.y = e.clientY;
+            });
+
+            const endDrag = (e) => {
+                if (drag && e.pointerId === drag.id) {
+                    drag = null;
+                    ursulaSave();
+                }
+            };
+
+            window.addEventListener('pointerup', endDrag);
+            window.addEventListener('pointercancel', endDrag);
+
+            canvas.addEventListener('wheel', (e) => {
+                if (!ursulaReady) return;
+                e.preventDefault();
+
+                const sel = ursulaParts[ursulaSel];
+                const d = e.deltaY || e.deltaX;
+
+                if (e.shiftKey) {
+                    sel.rot += (d < 0 ? 1 : -1) * 0.03;
+                } else {
+                    sel.s = Math.max(0.05, sel.s * (d < 0 ? 1.04 : 1 / 1.04));
+                }
+
+                ursulaSave();
+            }, { passive: false });
+
+            window.addEventListener('keydown', (e) => {
+                if (!ursulaReady) return;
+
+                const sel = ursulaParts[ursulaSel];
+                const big = e.shiftKey ? 10 : 1;
+                let used = true;
+
+                switch (e.code) {
+                    case 'KeyN': ursulaSel = (ursulaSel + 1) % ursulaParts.length; break;
+                    case 'KeyB': ursulaSel = (ursulaSel + ursulaParts.length - 1) % ursulaParts.length; break;
+                    case 'KeyF': sel.x -= 2 * big; break;
+                    case 'KeyH': sel.x += 2 * big; break;
+                    case 'KeyT': sel.y -= 2 * big; break;
+                    case 'KeyG': sel.y += 2 * big; break;
+                    case 'KeyR': sel.rot -= 0.02 * big; break;
+                    case 'KeyY': sel.rot += 0.02 * big; break;
+                    case 'KeyC': sel.rot += Math.PI; break;
+                    case 'KeyV': sel.fx *= -1; break;
+                    case 'KeyO': sel.hide = !sel.hide; break;
+                    case 'KeyA': ursulaAnim = !ursulaAnim; break;
+                    case 'KeyM': ursulaMag = !ursulaMag; break;
+                    case 'Comma': URSULA_S = Math.max(0.05, URSULA_S / 1.05); break;
+                    case 'Period': URSULA_S *= 1.05; break;
+                    case 'Minus': sel.s = Math.max(0.05, sel.s / 1.03); break;
+                    case 'Equal': sel.s *= 1.03; break;
+                    case 'BracketLeft':
+                    case 'BracketRight': {
+                        const j = ursulaSel + (e.code === 'BracketRight' ? 1 : -1);
+                        if (j >= 0 && j < ursulaParts.length) {
+                            [ursulaParts[ursulaSel], ursulaParts[j]] = [ursulaParts[j], ursulaParts[ursulaSel]];
+                            ursulaSel = j;
+                        }
+                        break;
+                    }
+                    case 'KeyP': {
+                        const txt =
+                            'const URSULA_S = ' + URSULA_S.toFixed(3) + ';\n' +
+                            ursulaParts.map(q =>
+                                "{ n: '" + q.n + "', x: " + Math.round(q.x) + ", y: " + Math.round(q.y) +
+                                ", rot: " + q.rot.toFixed(2) + ", s: " + q.s.toFixed(2) +
+                                ", fx: " + q.fx + (q.hide ? ", hide: true" : "") +
+                                ", bob: " + q.bob + ", sway: " + q.sway + ", ph: " + q.ph + " },"
+                            ).join('\n');
+                        console.log(txt);
+                        try { navigator.clipboard.writeText(txt); } catch (err) { /* só console */ }
+                        break;
+                    }
+                    case 'Delete':
+                        try { localStorage.removeItem(URSULA_RIG_KEY); } catch (err) { /* ignora */ }
+                        location.reload();
+                        break;
+                    default: used = false;
+                }
+
+                if (used) {
+                    e.preventDefault();
+                    ursulaSave();
+                }
+            });
+        }
+
         function drawText(txt, x, y, size, color) {
             ctx.font =
                 'bold ' + size + 'px "Segoe UI", Tahoma, sans-serif';
@@ -5710,6 +6171,10 @@
             winActions.hidden = state !== 'win' || winT <= 0.7;
             document.getElementById('next-level-btn').hidden = currentWorld === 'punch';
 
+            // Rastro do Rayman para a Ursula segui-lo por trás
+            ursulaSimT += dt;
+            ursulaTrailPush();
+
             // Passos e animação
             phase +=
                 dt * mix(9, 15.5, runBlend) * walkBlend;
@@ -5784,6 +6249,15 @@
                 camX = p.x - viewW * PLAYER_X;
             }
 
+            // Editor da Ursula: aproxima a câmera nela para ajustar com precisão.
+            camY = 0;
+            if (URSULA_EDIT && ursulaMag && ursulaOrg.x) {
+                zoom *= 2.6;
+                viewW = canvas.width / zoom;
+                camX = ursulaOrg.x - viewW / 2;
+                camY = ursulaOrg.y - 130;
+            }
+
             // Desenho
             ctx.setTransform(1, 0, 0, 1, 0, 0);
 
@@ -5804,6 +6278,7 @@
                 camX + viewW + 60
             );
 
+            drawUrsula(K);
             drawPlayer(K);
 
             // FLOOR MOUNTAIN (2):
